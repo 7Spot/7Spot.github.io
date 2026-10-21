@@ -2,29 +2,134 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="JUN7">
-  <meta name="description" content="7Spot，JUN7 的小玩意和日常分享">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>7Spot</title>
-  <style>
-    :root { --bg: #fafaf7; --fg: #1f1f1f; --muted: #7a7a72; --accent: #ff7a59; }
-    @media (prefers-color-scheme: dark) { :root { --bg: #161615; --fg: #f0efe9; --muted: #9a9a92; } }
-    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-      font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Noto Sans SC", sans-serif; }
-    main { min-height: 100%; display: grid; place-items: center; padding: 16px; box-sizing: border-box; text-align: center; }
-    h1 { font-size: clamp(2.4rem, 9vw, 4.5rem); margin: 0 0 .3em; letter-spacing: .02em; }
-    h1 span { color: var(--accent); }
-    p { color: var(--muted); font-size: 1.1rem; margin: .3em 0; }
-    .by { font-size: .95rem; }
-  </style>
+  <meta name="description" content="7Spot，JUN7 做的小东西都放在这里。">
+  <meta name="author" content="JUN7">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%238e8e93'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/site-data.js"></script>
 </head>
 <body>
-  <main>
-    <div>
-      <h1>7Spot<span>.</span></h1>
-      <p>网站搭建中，很快就来 🚧</p>
-      <p class="by">by JUN7</p>
+
+<!-- 背景：不动，只有光点慢慢飘 -->
+<div class="bg" id="bg" aria-hidden="true"></div>
+
+<!-- 连线：和气泡同一帧、同一组坐标画；靠屏幕边缘的一截渐变淡出 -->
+<svg class="lines" id="lines" aria-hidden="true">
+  <defs>
+    <linearGradient id="edgeFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.12" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="0.88" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="edgeMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+      <rect x="0" y="0" width="100%" height="100%" fill="url(#edgeFade)"/>
+    </mask>
+  </defs>
+  <g id="lines-g" mask="url(#edgeMask)"></g>
+</svg>
+
+<!-- 爪印图标（占位）与 Liquid Glass 的折射滤镜 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 位移贴图：中心中性灰不动，越靠边越往中心取样，像一块凸透镜 -->
+    <filter id="lg-refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><defs><linearGradient id='r' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='%23ff0000'/><stop offset='1' stop-color='%23000000'/></linearGradient><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%2300ff00'/><stop offset='1' stop-color='%23000000'/></linearGradient><radialGradient id='c'><stop offset='0' stop-color='%23808080'/><stop offset='0.55' stop-color='%23808080'/><stop offset='1' stop-color='%23808080' stop-opacity='0'/></radialGradient></defs><rect width='256' height='256' fill='url(%23r)'/><rect width='256' height='256' fill='url(%23g)' style='mix-blend-mode:screen'/><rect width='256' height='256' fill='url(%23c)'/></svg>" preserveAspectRatio="none" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <symbol id="paw" viewBox="0 0 24 24">
+    <ellipse cx="6.6" cy="9" rx="2.1" ry="2.7"/>
+    <ellipse cx="12" cy="6.8" rx="2.2" ry="2.8"/>
+    <ellipse cx="17.4" cy="9" rx="2.1" ry="2.7"/>
+    <path d="M12 11.2c-3.7 0-6.6 2.7-6.6 5.5 0 1.9 1.4 3.1 3.2 3.1 1.1 0 1.9-.5 3.4-.5s2.3.5 3.4.5c1.8 0 3.2-1.2 3.2-3.1 0-2.8-2.9-5.5-6.6-5.5z"/>
+  </symbol>
+</svg>
+
+<div class="stage" id="stage">
+
+  <!-- 第一层：7Spot -->
+  <section class="level" data-level="home" data-title="7Spot">
+    <div class="level-in">
+      <div class="float home-float">
+        <div class="zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
+        <div class="bubble bubble-home" data-node="home" data-shape="circle" aria-hidden="true"></div>
+      </div>
+      <h1 class="brand-h">7Spot<span class="dot" aria-hidden="true"></span></h1>
+      <p class="status-h" id="status-h"></p>
+      <p class="status-p" id="status-p"></p>
+      <div class="actions">
+        <a class="cap" href="#about" data-go="about" draggable="false"><span class="spark-ico" aria-hidden="true">✦</span>关于</a>
+        <a class="cap cap-primary" href="#things" data-go="things" draggable="false">小东西<span class="chev" aria-hidden="true">›</span></a>
+      </div>
     </div>
-  </main>
+  </section>
+
+  <!-- 第二层：小东西（气泡由数据生成） -->
+  <section class="level" data-level="things" data-title="小东西" data-parent="home" data-parent-node='[data-node="home"]'>
+    <button class="back-chevrons" type="button" data-back aria-label="返回上一层"><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg></button>
+    <div class="level-in">
+      <div class="items" id="items"></div>
+    </div>
+  </section>
+
+  <!-- 第三层：同桌 -->
+  <section class="level" data-level="deskmate" data-title="同桌" data-parent="things" data-parent-node='[data-node="item:deskmate"]'>
+    <button class="back-chevrons" type="button" data-back aria-label="返回上一层"><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg></button>
+    <div class="level-in">
+      <div class="float">
+        <article class="glass detail" data-node="deskmate" data-shape="rect">
+          <header class="app-head">
+            <span class="app-icon big" aria-hidden="true"><svg><use href="#paw"/></svg></span>
+            <div class="app-meta">
+              <h2>同桌</h2>
+              <p class="sub">住在你桌面上的一只宠物</p>
+              <div class="app-actions"><span class="pill get" aria-disabled="true">获取</span><span class="tag">Mac 应用</span></div>
+            </div>
+          </header>
+          <ul class="features">
+            <li><b>鼠标跟随</b><span>远远地看着鼠标</span></li>
+            <li><b>灵动交互</b><span>点击起身，再点起跳</span></li>
+          </ul>
+          <p class="req">需要 M 芯片，macOS 12 以上</p>
+          <p class="status-line"><span class="badge" data-item-status="deskmate"></span><span>没有在开发就是睡着了</span></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- 关于：独立于网站功能的一页，点一下炸开，像灵光乍现。不在流里，不参与左右滑动。 -->
+<section class="about-page" id="about-page" aria-hidden="true">
+  <div class="about-veil" data-about-close></div>
+  <svg class="lines-about-svg" aria-hidden="true"><g id="lines-about"></g></svg>
+  <div class="about-stage">
+    <div class="spark" aria-hidden="true"><i class="spark-halo"></i><i class="spark-core"></i></div>
+    <div class="sparks" id="sparks" aria-hidden="true"></div>
+    <div class="about-ball" data-pos="1"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:1" data-shape="circle" data-link-from="about:3"><span class="bubble-text">早上七点在睡觉的人，一般都还没起床</span></div></div></div></div>
+    <div class="about-ball" data-pos="2"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:2" data-shape="circle" data-link-from="about:1"><span class="bubble-text">每个小东西的起点，都源于一次灵光乍现</span></div></div></div></div>
+    <div class="about-ball" data-pos="3"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:3" data-shape="circle" data-link-from="about:2"><span class="bubble-text">科幻里的奇点，似乎并没有那么遥远</span></div></div></div></div>
+    <div class="about-credit"><div class="burst"><div class="float"><button class="credit" type="button" id="credit" data-node="credit" data-shape="rect" data-burst-delay="420" aria-label="开发伙伴"><span class="credit-layer credit-a is-on" id="credit-a">作者是我和几个 AI，它们说它们不做梦，我不信</span><span class="credit-layer credit-b" id="credit-b" aria-hidden="true"></span></button></div></div></div>
+  </div>
+  <p class="about-hint">点一下空白处回去</p>
+</section>
+
+<!-- 底部：走过的路，一串点（首页不显示） -->
+<nav class="trail" id="trail" aria-label="路径"></nav>
+
+<!-- 临时：预览几种状态，做完拆掉 -->
+<div class="statebar" id="statebar" aria-label="预览状态">
+  <button type="button" data-state="today">今天醒过</button>
+  <button type="button" data-state="ago3">3 天前醒过</button>
+  <button type="button" data-state="dreaming">造梦</button>
+  <button type="button" data-state="never">还没醒过</button>
+</div>
+
+<script src="assets/motion.js"></script>
 </body>
 </html>

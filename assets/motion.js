@@ -1,0 +1,650 @@
+// 7Spot：状态、层级推进（脚本逐帧驱动）、连线（同帧同坐标）、漂浮、光点、滑动、返回箭头、关于页。
+(function () {
+  var root = document.documentElement;
+  root.classList.add('js');
+  var site = window.SITE || { wakes: [], items: [], dreaming: false, credits: [] };
+  var params = new URLSearchParams(location.search);
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TAU = Math.PI * 2;
+  // Safari 的 backdrop-filter 不认 SVG 滤镜，Liquid Glass 退回普通毛玻璃
+  var ua = navigator.userAgent;
+  if (/Safari\//.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS/.test(ua)) root.classList.add('no-refract');
+
+  // 调试：?theme=dark|light
+  var theme = params.get('theme');
+  if (theme === 'dark' || theme === 'light') root.dataset.theme = theme;
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function easeInOut(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+  function easeIn(x) { return x * x; }
+  function easeOutBack(x) { var c1 = 1.0, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  function smooth(x) { return x * x * (3 - 2 * x); }
+
+  // ---------- 日期 ----------
+  function parseDate(s) { var p = String(s).split('-').map(Number); return new Date(p[0], (p[1] || 1) - 1, p[2] || 1); }
+  function startOfToday() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function daysAgo(s) { return Math.round((startOfToday() - parseDate(s)) / 864e5); }
+  function dayWord(n) { return n <= 0 ? '今天' : n === 1 ? '昨天' : n === 2 ? '前天' : n + ' 天前'; }
+  function itemById(id) { for (var i = 0; i < site.items.length; i++) if (site.items[i].id === id) return site.items[i]; return null; }
+  function sortedWakes() { return (site.wakes || []).slice().sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); }); }
+  function latestWakeOf(id) { var ws = sortedWakes(); for (var i = 0; i < ws.length; i++) if (ws[i].item === id) return ws[i]; return null; }
+  function developing() { for (var i = 0; i < site.items.length; i++) if (site.items[i].status === 'developing') return site.items[i]; return null; }
+
+  // ---------- 状态：今天醒过 > 造梦 > N 天前醒过 > 还没醒过 ----------
+  function siteState() {
+    var w = sortedWakes()[0] || null, d = w ? daysAgo(w.date) : null;
+    if (w && d <= 0) return { kind: 'today', wake: w, days: 0, item: itemById(w.item) };
+    if (site.dreaming) return { kind: 'dreaming', item: developing() || site.items[0] || null };
+    if (w) return { kind: 'ago', wake: w, days: d, item: itemById(w.item) };
+    return { kind: 'never' };
+  }
+  // 预览：?state=today|ago3|dreaming|never，或右上角按钮
+  function previewState(name) {
+    function sample(n) { var d = new Date(); d.setDate(d.getDate() - n); return { date: d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(), item: (site.items[0] || {}).id, note: '示例：同桌 1.0 可以下载了' }; }
+    if (name === 'today') return { kind: 'today', wake: sample(0), days: 0, item: site.items[0] || null, preview: true };
+    if (name === 'ago3') return { kind: 'ago', wake: sample(3), days: 3, item: site.items[0] || null, preview: true };
+    if (name === 'dreaming') return { kind: 'dreaming', item: developing() || site.items[0] || null, preview: true };
+    if (name === 'never') return { kind: 'never', preview: true };
+    return siteState();
+  }
+  var S = null;
+  function applyState(next) {
+    S = next;
+    document.body.classList.remove('state-today', 'state-dreaming', 'state-ago', 'state-never');
+    document.body.classList.add('state-' + S.kind);
+    var h = document.getElementById('status-h'), p = document.getElementById('status-p');
+    if (S.kind === 'today') { h.textContent = '今天醒过'; p.textContent = S.wake.note; }
+    else if (S.kind === 'dreaming') { h.textContent = '在造梦'; p.textContent = '正在开发：「' + (S.item ? S.item.title : '小东西') + '」'; }
+    else if (S.kind === 'ago') { h.textContent = dayWord(S.days) + '醒过'; p.textContent = '也许有可能大概现在睡着了'; }
+    else { h.textContent = '还没醒过'; p.textContent = '也许有可能大概一直在睡'; }
+
+    // 小东西徽标：造梦中 / 今天醒过 / 昨天醒过 / N 天前醒过；没有就不显示
+    var badges = document.querySelectorAll('[data-item-status]');
+    for (var b = 0; b < badges.length; b++) {
+      var el = badges[b], it = itemById(el.getAttribute('data-item-status'));
+      if (!it) continue;
+      var label = '', days = null;
+      var pw = S.preview && S.wake && S.wake.item === it.id ? S.wake : null;
+      if (pw) days = S.days;
+      else if (it.status === 'developing') label = '造梦中';
+      else { var w = latestWakeOf(it.id); if (w) days = daysAgo(w.date); }
+      if (days !== null) label = dayWord(days) + '醒过';
+      el.textContent = label;
+      el.hidden = !label;
+      el.classList.toggle('is-today', days === 0);
+    }
+    var awake = S.kind === 'today';
+    document.title = awake ? '7Spot' : '7Spot · zzz';
+    var fav = document.getElementById('favicon');
+    if (fav) fav.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='" + (awake ? '%230a84ff' : '%238e8e93') + "'/%3E%3C/svg%3E";
+    var key = S.kind === 'ago' ? 'ago3' : S.kind;
+    var sb = document.querySelectorAll('#statebar button');
+    for (var i = 0; i < sb.length; i++) sb[i].classList.toggle('is-on', sb[i].getAttribute('data-state') === key);
+    needMeasure = true;
+  }
+
+  // ---------- 小东西气泡：从数据生成 ----------
+  var itemsEl = document.getElementById('items');
+  site.items.forEach(function (it) {
+    var w = document.createElement('div');
+    w.className = 'item';
+    w.innerHTML =
+      '<div class="float"><button class="bubble bubble-item" type="button" data-node="item:' + it.id + '" data-shape="circle" data-go="' + it.id + '" aria-label="' + esc(it.title) + '">' +
+        '<span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span>' +
+        '<span class="bubble-text">' + esc(it.bubble || it.sub).replace(/\n/g, '<br>') + '</span>' +
+      '</button></div>' +
+      '<span class="label">' + esc(it.title) + '</span>' +
+      '<span class="tags"><span class="tag">' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>';
+    itemsEl.appendChild(w);
+  });
+
+  // ---------- 层级：位置全在脚本手里 ----------
+  var stage = document.getElementById('stage');
+  var W = stage.clientWidth || window.innerWidth, H = window.innerHeight;
+  var levels = {}, levelList = [];
+  [].slice.call(document.querySelectorAll('.level')).forEach(function (el) {
+    var L = { name: el.dataset.level, el: el, parent: el.dataset.parent || null, x: 1, y: 0, from: 1, to: 1, t0: 0, dur: 0, anim: false };
+    levels[L.name] = L; levelList.push(L);
+  });
+  var current = null, needMeasure = true;
+
+  // 流里的线：首页时整体渐隐，离开首页渐显
+  var linesAlpha = { v: 1, from: 1, to: 1, t0: 0 };
+  function setLinesTarget(to, instant) {
+    if (instant) { linesAlpha.v = linesAlpha.from = linesAlpha.to = to; return; }
+    if (linesAlpha.to === to) return;
+    linesAlpha.from = linesAlpha.v; linesAlpha.to = to; linesAlpha.t0 = performance.now();
+  }
+
+  // iOS 那条推层曲线 cubic-bezier(.32,.72,0,1)
+  function bezier(p1x, p1y, p2x, p2y) {
+    function A(a1, a2) { return 1 - 3 * a2 + 3 * a1; } function B(a1, a2) { return 3 * a2 - 6 * a1; } function C(a1) { return 3 * a1; }
+    function calc(t, a1, a2) { return ((A(a1, a2) * t + B(a1, a2)) * t + C(a1)) * t; }
+    function slope(t, a1, a2) { return 3 * A(a1, a2) * t * t + 2 * B(a1, a2) * t + C(a1); }
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var t = x;
+      for (var i = 0; i < 8; i++) { var s = slope(t, p1x, p2x); if (s < 1e-6) break; t -= (calc(t, p1x, p2x) - x) / s; }
+      return calc(t, p1y, p2y);
+    };
+  }
+  var pushEase = bezier(0.32, 0.72, 0, 1);
+  var PUSH_T = 900;
+
+  function tween(L, to) {
+    if (reduce) { L.x = to; L.anim = false; return; }
+    if (!L.anim && L.x === to) return;
+    if (L.anim && L.to === to) return;   // 已经在往同一个目标走，不重启缓动
+    L.from = L.x; L.to = to; L.t0 = performance.now();
+    L.dur = Math.max(260, PUSH_T * Math.min(1, Math.abs(to - L.x)));
+    L.anim = true;
+  }
+  function titleOf(name) { var it = itemById(name); return it ? it.title : (levels[name] && levels[name].el.dataset.title) || name; }
+  function pathOf(name) { var p = [], n = name; while (n && levels[n]) { p.unshift(n); n = levels[n].parent; } return p; }
+  // 下一层唯一时才有“下一层”：7Spot → 小东西；小东西只有一样时 → 它
+  function nextOf(name) {
+    if (name === 'home') return 'things';
+    if (name === 'things' && site.items.length === 1 && levels[site.items[0].id]) return site.items[0].id;
+    return null;
+  }
+  // 把每一层送到它该在的位置：目标层 0，祖先 -1，其他 +1
+  function settle(target, instant) {
+    var path = pathOf(target);
+    levelList.forEach(function (L) {
+      var to = L.name === target ? 0 : path.indexOf(L.name) >= 0 ? -1 : 1;
+      if (instant) { L.x = to; L.anim = false; } else tween(L, to);
+    });
+  }
+  function setLevel(target, instant) {
+    if (!levels[target]) target = 'home';
+    if (target === current) { settle(target, instant); return; }
+    current = target;
+    levelList.forEach(function (L) {
+      if (L.name === target) { L.el.removeAttribute('inert'); L.el.setAttribute('aria-hidden', 'false'); }
+      else { L.el.setAttribute('inert', ''); L.el.setAttribute('aria-hidden', 'true'); }
+    });
+    document.body.dataset.level = target;
+    settle(target, instant);
+    setLinesTarget(target === 'home' ? 0 : 1, instant);
+    updateNav();
+  }
+  function hashOf(name) { return name === 'home' ? location.pathname + location.search : '#' + name; }
+  function nameFromHash() { var h = location.hash.replace('#', ''); return levels[h] ? h : 'home'; }
+  function go(name) {
+    if (name === 'about') { openAbout(true); return; }
+    if (!levels[name] || name === current) return;
+    history.pushState({ level: name }, '', hashOf(name));
+    setLevel(name);
+  }
+  function back() {
+    if (current === 'home') return;
+    var parent = levels[current].parent || 'home';
+    if (history.state && history.state.level === current) { setLevel(parent); history.back(); }
+    else { history.replaceState({ level: parent }, '', hashOf(parent)); setLevel(parent); }
+  }
+  function forward() { var n = nextOf(current); if (n) go(n); }
+  // 点底部圆点：往回是弹
+  function jump(name) {
+    if (name === current) return;
+    if (pathOf(current).indexOf(name) >= 0) { history.replaceState({ level: name }, '', hashOf(name)); setLevel(name); }
+    else go(name);
+  }
+  window.addEventListener('popstate', function () {
+    if (location.hash === '#about') { openAbout(false); return; }
+    closeAbout(false);
+    setLevel(nameFromHash());
+  });
+
+  // 底部圆点：只画走过的路
+  var trail = document.getElementById('trail');
+  function updateNav() {
+    var names = pathOf(current);
+    var html = '<div class="trail-dots">';
+    names.forEach(function (nm, i) {
+      if (i) html += '<i class="trail-line"></i>';
+      html += '<button class="trail-dot' + (nm === current ? ' is-current' : '') + '" type="button" data-jump="' + nm + '" aria-label="' + esc(titleOf(nm)) + '"><i></i></button>';
+    });
+    html += '</div><span class="trail-label">' + esc(titleOf(current)) + '</span>';
+    trail.innerHTML = html;
+  }
+
+  // 右上角的预览按钮平时藏着：网址带 ?preview 或 ?state= 才显示
+  if (params.has('preview') || params.has('state')) document.body.classList.add('preview');
+  applyState(previewState(params.get('state')));
+  document.getElementById('statebar').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-state]');
+    if (b) applyState(previewState(b.getAttribute('data-state')));
+  });
+  setLevel(nameFromHash(), true);
+
+  // ---------- 点击：按下松手就是点击；只有真的滑动翻了层，才吞掉随后的那一次点击 ----------
+  var suppressClick = false;
+  document.addEventListener('click', function (e) {
+    if (suppressClick) { suppressClick = false; e.preventDefault(); e.stopPropagation(); return; }
+    if (about.target === 1) {   // 关于开着或正在开：只认落款翻面和空白处收回
+      if (e.target.closest('#credit')) { flipCredit(); return; }
+      if (e.target.closest('[data-about-close]')) closeAbout(true);
+      if (e.target.closest('[data-go], [data-jump], [data-back]')) e.preventDefault();
+      return;
+    }
+    var g = e.target.closest('[data-go]');
+    if (g) { e.preventDefault(); go(g.getAttribute('data-go')); return; }
+    var j = e.target.closest('[data-jump]');
+    if (j) { jump(j.getAttribute('data-jump')); return; }
+    var bk = e.target.closest('[data-back]');
+    if (bk) { e.preventDefault(); back(); }
+  }, true);
+  document.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  document.addEventListener('keydown', function (e) {
+    if (about.target === 1) { if (e.key === 'Escape') closeAbout(true); return; }
+    if (e.key === 'Escape' || e.key === 'ArrowLeft') back();
+    else if (e.key === 'ArrowRight') forward();
+  });
+
+  // ---------- 滑动：触控板、手指、鼠标按住，三种输入共用一条路；可点的东西上也能滑 ----------
+  var drag = null;
+  function dragBegin(kind) {
+    var par = levels[current].parent, nxt = nextOf(current);
+    drag = { kind: kind, p: 0, cur: levels[current], par: par ? levels[par] : null, nxt: nxt ? levels[nxt] : null, t0: performance.now(), lastP: 0, lastT: performance.now(), v: 0 };
+    [drag.cur, drag.par, drag.nxt].forEach(function (L) { if (L) L.anim = false; });
+    stage.classList.add('is-dragging');
+  }
+  function dragUpdate(p) {
+    if (!drag) return;
+    if (p > 0 && !drag.par) p *= 0.25;
+    if (p < 0 && !drag.nxt) p *= 0.25;
+    p = Math.max(-1, Math.min(1, p));
+    var now = performance.now(), dt = now - drag.lastT;
+    if (dt > 0) drag.v = drag.v * 0.6 + ((p - drag.lastP) / dt * 1000) * 0.4;
+    drag.lastP = p; drag.lastT = now; drag.p = p;
+    drag.cur.x = p;
+    if (drag.par) drag.par.x = -1 + Math.max(0, p);
+    if (drag.nxt) drag.nxt.x = 1 + Math.min(0, p);
+  }
+  // 返回 true 表示这次滑动翻了层
+  function dragEnd() {
+    if (!drag) return false;
+    var d = drag; drag = null;
+    stage.classList.remove('is-dragging');
+    var stale = performance.now() - d.lastT > 120, v = stale ? 0 : d.v;
+    if ((d.p > 0.3 || (v > 0.9 && d.p > 0.05)) && d.par) { back(); return true; }
+    if ((d.p < -0.3 || (v < -0.9 && d.p < -0.05)) && d.nxt) { forward(); return true; }
+    settle(current);
+    return false;
+  }
+  function anyAnim() { for (var i = 0; i < levelList.length; i++) if (levelList[i].anim) return true; return false; }
+
+  // 手指 / 鼠标：从任何地方按下都能拖，包括球和胶囊上
+  (function () {
+    var pt = null;
+    stage.addEventListener('pointerdown', function (e) {
+      if (about.target === 1 || e.button !== 0) return;
+      pt = { id: e.pointerId, x0: e.clientX, y0: e.clientY, axis: null, type: e.pointerType };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!pt || e.pointerId !== pt.id) return;
+      var dx = e.clientX - pt.x0, dy = e.clientY - pt.y0;
+      if (!pt.axis) { if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; pt.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; if (pt.axis === 'x') dragBegin(pt.type); }
+      if (pt.axis !== 'x') return;
+      dragUpdate(dx / W);
+    });
+    function up(e) {
+      if (!pt || e.pointerId !== pt.id) return;
+      var wasDrag = pt.axis === 'x'; pt = null;
+      if (!wasDrag) return;
+      var navigated = dragEnd();
+      if (navigated) { suppressClick = true; setTimeout(function () { suppressClick = false; }, 0); }
+    }
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  })();
+
+  // 触控板两指：累计超过死区才算开始，细微抖动一律忽略
+  (function () {
+    var acc = 0, pre = 0, active = false, timer = null, preTimer = null, cooldown = 0, DEAD = 24;
+    window.addEventListener('wheel', function (e) {
+      if (about.target === 1) return;
+      var horiz = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      if (!horiz && !active) return;
+      e.preventDefault();
+      var now = performance.now();
+      if (now < cooldown) return;
+      if (!active) {
+        if (anyAnim() || drag || Math.abs(e.deltaX) < 2) return;
+        pre += e.deltaX;
+        clearTimeout(preTimer); preTimer = setTimeout(function () { pre = 0; }, 200);
+        if (Math.abs(pre) < DEAD) return;
+        active = true; acc = pre; pre = 0; dragBegin('wheel');
+      } else {
+        acc += e.deltaX;
+      }
+      dragUpdate(-acc / W);
+      clearTimeout(timer);
+      timer = setTimeout(function () { active = false; cooldown = performance.now() + 500; dragEnd(); }, 120);
+    }, { passive: false });
+    function abort() { clearTimeout(timer); if (active) { active = false; dragEnd(); } pre = 0; }
+    window.addEventListener('blur', abort);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) abort(); });
+  })();
+
+  // 层内滚动、窗口变化、字体加载：重新量位置
+  levelList.forEach(function (L) { L.el.addEventListener('scroll', function () { needMeasure = true; }, { passive: true }); });
+  window.addEventListener('resize', function () { W = stage.clientWidth || window.innerWidth; H = window.innerHeight; needMeasure = true; about.needMeasure = true; fitMask(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { needMeasure = true; about.needMeasure = true; });
+
+  // ---------- 背景光点 ----------
+  var bg = document.getElementById('bg');
+  (function () {
+    var n = window.innerWidth < 600 ? 28 : window.innerWidth <= 1024 ? 40 : 52;
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement('i');
+      s.style.cssText = '--x:' + rnd(2, 98).toFixed(1) + '%;--y:' + rnd(2, 98).toFixed(1) + '%;--s:' + rnd(2.5, 6.5).toFixed(1) + 'px;--o:' + rnd(0.35, 0.9).toFixed(2) +
+        ';--d:' + rnd(25, 60).toFixed(0) + 's;--delay:-' + rnd(0, 60).toFixed(0) + 's;--dx:' + rnd(-80, 80).toFixed(0) + 'px;--dy:' + rnd(-80, 80).toFixed(0) + 'px';
+      frag.appendChild(s);
+    }
+    bg.appendChild(frag);
+  })();
+  var mouse = { x: 0, y: 0, tx: 0, ty: 0, has: false };
+  window.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') { mouse.tx = e.clientX / innerWidth - 0.5; mouse.ty = e.clientY / innerHeight - 0.5; mouse.has = true; } }, { passive: true });
+
+  // ---------- 漂浮：几个慢周期叠加 ----------
+  var floats = [].slice.call(document.querySelectorAll('.float'));
+  floats.forEach(function (f) {
+    f._p = { a: [14, 7, 3], px: [rnd(10000, 16000), rnd(6000, 9000), rnd(3000, 5000)], py: [rnd(11000, 17000), rnd(6500, 9500), rnd(3200, 5200)], ph: [rnd(0, TAU), rnd(0, TAU), rnd(0, TAU)] };
+    f._o = { x: 0, y: 0 };
+  });
+  function floatOffset(f, t) {
+    var p = f._p, x = 0, y = 0;
+    for (var i = 0; i < 3; i++) { x += Math.sin(t * TAU / p.px[i] + p.ph[i]) * p.a[i]; y += Math.cos(t * TAU / p.py[i] + p.ph[i] * 1.37) * p.a[i]; }
+    return { x: x, y: y };
+  }
+
+  // ---------- 节点与连线：端点和气泡用同一组数字 ----------
+  var svg = document.getElementById('lines'), linesG = document.getElementById('lines-g'), grad = document.getElementById('edgeFade');
+  function fitMask() { grad.setAttribute('x2', window.innerWidth); var k = Math.min(0.45, 180 / window.innerWidth); var st = grad.querySelectorAll('stop'); st[1].setAttribute('offset', k); st[2].setAttribute('offset', 1 - k); }
+  fitMask();
+  var nodes = [].slice.call(document.querySelectorAll('[data-node]')).map(function (el) {
+    var lv = el.closest('.level');
+    return { el: el, name: el.dataset.node, shape: el.dataset.shape || 'rect', level: lv ? levels[lv.dataset.level] : null, about: !lv, f: el.closest('.float'), burst: el.closest('.burst'), base: null };
+  });
+  var nodeByName = {}; nodes.forEach(function (n) { nodeByName[n.name] = n; });
+  // 基准位置 = 量到的位置 − 当下的层位移 − 当下的漂浮偏移。只在布局可能变化时量，且只在背后没被缩放时量。
+  function measureAll() {
+    nodes.forEach(function (n) {
+      if (n.about) return;
+      var r = n.el.getBoundingClientRect(), o = n.f ? n.f._o : { x: 0, y: 0 };
+      n.base = { l: r.left - n.level.x * W - o.x, t: r.top - n.level.y - o.y, w: r.width, h: r.height };
+    });
+  }
+  function rectNow(n) { var o = n.f ? n.f._o : { x: 0, y: 0 }; return { l: n.base.l + n.level.x * W + o.x, t: n.base.t + n.level.y + o.y, w: n.base.w, h: n.base.h }; }
+  function center(r) { return { x: r.l + r.w / 2, y: r.t + r.h / 2 }; }
+  function edge(r, shape, to) {
+    var c = center(r), dx = to.x - c.x, dy = to.y - c.y, len = Math.hypot(dx, dy) || 1, k;
+    if (shape === 'circle') k = Math.min(r.w, r.h) / 2 / len;
+    else k = Math.min(r.w / 2 / (Math.abs(dx) || 1e-6), r.h / 2 / (Math.abs(dy) || 1e-6));
+    k = Math.min(k, 1);
+    return { x: c.x + dx * k, y: c.y + dy * k };
+  }
+  // 每层的连线：父节点 → 本层每个节点；节点标了 data-link-from 就改从那个节点连过来。首页没有父节点，自然没有线。
+  var linkDefs = [];
+  levelList.forEach(function (L) {
+    var sel = L.el.dataset.parentNode; if (!L.parent || !sel) return;
+    var pn = document.querySelector(sel); if (!pn) return;
+    var parentNode = nodeByName[pn.dataset.node];
+    nodes.forEach(function (n) {
+      if (n.level !== L) return;
+      var from = n.el.dataset.linkFrom ? nodeByName[n.el.dataset.linkFrom] : parentNode;
+      if (from) linkDefs.push({ level: L, a: from, b: n, path: null, dot: null });
+    });
+  });
+  linkDefs.forEach(function (d) {
+    d.path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    d.dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); d.dot.setAttribute('r', '2.5');
+    linesG.appendChild(d.path); linesG.appendChild(d.dot);
+  });
+  function drawLink(d, ra, rb) {
+    var a = edge(ra, d.a.shape, center(rb)), b = edge(rb, d.b.shape, center(ra));
+    var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    var nx = -dy / len, ny = dx / len; if (ny < 0) { nx = -nx; ny = -ny; }
+    var sag = Math.min(36, len * 0.07);
+    d.path.setAttribute('d', 'M' + a.x.toFixed(1) + ' ' + a.y.toFixed(1) + ' Q' + ((a.x + b.x) / 2 + nx * sag).toFixed(1) + ' ' + ((a.y + b.y) / 2 + ny * sag).toFixed(1) + ' ' + b.x.toFixed(1) + ' ' + b.y.toFixed(1));
+    d.dot.setAttribute('cx', b.x.toFixed(1)); d.dot.setAttribute('cy', b.y.toFixed(1));
+  }
+
+  // ---------- 返回箭头：三个向左的箭头，贴着该层第一个节点的左边，从靠球的那个开始依次点亮 ----------
+  var chevrons = [];
+  levelList.forEach(function (L) {
+    var el = L.el.querySelector('.back-chevrons'); if (!el) return;
+    var node = null; for (var i = 0; i < nodes.length; i++) if (nodes[i].level === L) { node = nodes[i]; break; }
+    if (!node) return;
+    chevrons.push({ level: L, node: node, el: el, items: [].slice.call(el.querySelectorAll('svg')) });
+  });
+  var CHEV_T = 2400;
+  function chevronTick(t) {
+    chevrons.forEach(function (c) {
+      if (!c.node.base || Math.abs(c.level.x) >= 1) return;
+      var r = rectNow(c.node), lx = c.level.x * W, cx, cy;
+      if (r.l >= 84) { cx = r.l - 46; cy = r.t + r.h / 2; }     // 球左边、来路的线上
+      else { cx = r.l + 30; cy = r.t - 26; }                     // 窄屏没地方：卡片左上角上方
+      var drift = reduce ? 0 : 6 * (0.5 - 0.5 * Math.cos((t % CHEV_T) / CHEV_T * TAU));
+      c.el.style.transform = 'translate3d(' + (cx - lx - drift).toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0) translate(-50%,-50%)';
+      c.items.forEach(function (it, i) {
+        var k = 2 - i, op;   // 最右边（靠球）的先亮
+        if (reduce) op = [0.3, 0.55, 0.85][i];
+        else {
+          var local = ((((t - k * 300) % CHEV_T) + CHEV_T) % CHEV_T) / CHEV_T;
+          var v = local < 0.2 ? easeInOut(local / 0.2) : local < 0.55 ? 1 - easeInOut((local - 0.2) / 0.35) : 0;
+          op = 0.22 + 0.78 * v;
+        }
+        it.style.opacity = op.toFixed(2);
+      });
+    });
+  }
+
+  // ---------- 关于：一个 0→1 的进度值驱动全部，随时可打断 ----------
+  var aboutPage = document.getElementById('about-page'), aboutVeil = aboutPage.querySelector('.about-veil'), sparksEl = document.getElementById('sparks');
+  var aboutNodes = nodes.filter(function (n) { return n.about; });
+  var about = { target: 0, p: 0, from: 0, to: 0, t0: 0, dur: 0, anim: false, shown: false, pendingBurst: false, needMeasure: false, lp: 0, veilV: 0, blurV: 0, lastT: 0 };
+  var OPEN_T = 1300, CLOSE_T = 700;
+  function aboutMeasure() {
+    aboutNodes.forEach(function (n) {
+      var r = n.el.getBoundingClientRect(), o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 };
+      n.base = { l: r.left - o.x - bo.x, t: r.top - o.y - bo.y, w: r.width, h: r.height };
+    });
+  }
+  function rectAbout(n) { var o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 }; return { l: n.base.l + o.x + bo.x, t: n.base.t + o.y + bo.y, w: n.base.w, h: n.base.h }; }
+  function makeSparks() {
+    sparksEl.innerHTML = '';
+    if (reduce) return;
+    var n = window.innerWidth < 600 ? 18 : 28, frag = document.createDocumentFragment();
+    var maxD = Math.min(window.innerWidth, window.innerHeight) * 0.48;
+    for (var i = 0; i < n; i++) {
+      var ang = Math.random() * TAU, dist = maxD * (0.35 + Math.random() * 0.65);
+      var el = document.createElement('i');
+      el.style.cssText = '--s:' + (3 + Math.random() * 4).toFixed(1) + 'px;--dx:' + (Math.cos(ang) * dist).toFixed(0) + 'px;--dy:' + (Math.sin(ang) * dist).toFixed(0) + 'px;--delay:' + (Math.random() * 90).toFixed(0) + 'ms';
+      frag.appendChild(el);
+    }
+    sparksEl.appendChild(frag);
+  }
+  function startAboutTween() {
+    about.from = about.p; about.to = about.target; about.t0 = performance.now();
+    about.dur = reduce ? 1 : Math.max(160, (about.target ? OPEN_T : CLOSE_T) * Math.abs(about.to - about.from));
+    about.anim = true;
+  }
+  function openAbout(push) {
+    if (about.target === 1) return;
+    if (push && !(history.state && history.state.about)) history.pushState({ about: true, level: current }, '', '#about');
+    about.target = 1;
+    stage.setAttribute('inert', '');
+    aboutVeil.style.pointerEvents = '';
+    aboutPage.classList.remove('is-settled');
+    if (!about.shown) {   // 从完全关闭开始：显示出来、量位置、放烟花、落款复位
+      about.shown = true; about.p = 0; about.veilV = 0; about.blurV = 0; about.lastT = 0;
+      aboutPage.classList.add('is-open'); aboutPage.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('about-open');
+      aboutNodes.forEach(function (n) { if (n.burst) { n.burst.style.transform = ''; n.burst.style.opacity = '0'; n.burst._o = { x: 0, y: 0 }; } });
+      resetCredit();
+      makeSparks();
+      about.pendingBurst = true;
+    }
+    startAboutTween();
+  }
+  function closeAbout(push) {
+    if (about.target === 0) return;
+    if (push) {
+      if (history.state && history.state.about) history.back();
+      else history.replaceState({ level: current }, '', hashOf(current));
+    }
+    about.target = 0;
+    stage.removeAttribute('inert');
+    aboutVeil.style.pointerEvents = 'none';
+    aboutPage.classList.remove('is-settled');
+    startAboutTween();
+  }
+  function aboutTick(t) {
+    if (!about.shown) return;
+    if (about.pendingBurst) {   // display 已生效，先量再放烟花
+      about.pendingBurst = false;
+      aboutMeasure(); measureCredit();
+      aboutPage.classList.remove('is-bursting'); void aboutPage.offsetWidth; aboutPage.classList.add('is-bursting');
+      about.t0 = t;
+    }
+    if (about.anim) {
+      var k = clamp01((t - about.t0) / about.dur);
+      var e = about.target ? k : easeInOut(k);   // 开：匀速（每个球自己有曲线）；关：缓入缓出一起收回
+      about.p = about.from + (about.to - about.from) * e;
+      if (k >= 1) { about.p = about.to; about.anim = false; }
+    }
+    var el = about.p * OPEN_T, cx = W / 2, cy = H / 2;
+    aboutNodes.forEach(function (n, i) {
+      var delay = n.el.dataset.burstDelay ? +n.el.dataset.burstDelay : i * 70;
+      var pi = clamp01((el - delay) / 700), e2 = reduce ? pi : easeOutBack(pi);
+      var c = center(n.base), ox = (cx - c.x) * (1 - e2), oy = (cy - c.y) * (1 - e2), sc = reduce ? 1 : 0.2 + 0.8 * e2;
+      n.burst._o = { x: ox, y: oy };
+      n.burst.style.transform = pi >= 1 ? '' : 'translate3d(' + ox.toFixed(2) + 'px,' + oy.toFixed(2) + 'px,0) scale(' + sc.toFixed(3) + ')';
+      n.burst.style.opacity = clamp01(pi * 2.5).toFixed(2);
+    });
+    // 遮罩、模糊、背后缩放：开的时候先到位，关的时候跟着进度一起退；限速跟随，中途反向也不跳
+    var vt = about.target ? clamp01(el / 450) : smooth(about.p);
+    var bt = about.target ? clamp01(el / 600) : smooth(about.p);
+    var dt = about.lastT ? Math.min(50, t - about.lastT) : 16; about.lastT = t;
+    var step = dt / 220;
+    about.veilV += Math.max(-step, Math.min(step, vt - about.veilV));
+    about.blurV += Math.max(-step, Math.min(step, bt - about.blurV));
+    aboutVeil.style.opacity = about.veilV.toFixed(3);
+    var bf = 'blur(' + (16 * about.blurV).toFixed(1) + 'px) saturate(120%)';
+    aboutVeil.style.webkitBackdropFilter = bf; aboutVeil.style.backdropFilter = bf;
+    var sc2 = 1 - 0.03 * about.blurV;
+    stage.style.transform = sc2 > 0.9995 ? '' : 'scale(' + sc2.toFixed(4) + ')';
+    about.lp = clamp01((el - 760) / 500);
+    if (!about.anim && about.p >= 1) {
+      aboutPage.classList.add('is-settled');
+      if (about.needMeasure) { about.needMeasure = false; aboutMeasure(); measureCredit(); }
+    }
+    if (!about.anim && about.p <= 0 && about.target === 0 && about.veilV <= 0.002) {
+      about.shown = false;
+      aboutPage.classList.remove('is-open', 'is-bursting'); aboutPage.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('about-open');
+      stage.style.transform = '';
+    }
+  }
+  // 关于的线：三个球之间，随进度画出 / 收回
+  var linesAbout = document.getElementById('lines-about');
+  var aboutLinks = [];
+  nodes.forEach(function (n) {
+    if (!n.about || !n.el.dataset.linkFrom) return;
+    var from = nodeByName[n.el.dataset.linkFrom];
+    if (from) aboutLinks.push({ a: from, b: n });
+  });
+  aboutLinks.forEach(function (d) {
+    d.path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); d.path.setAttribute('pathLength', '1');
+    d.dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); d.dot.setAttribute('r', '2.5');
+    linesAbout.appendChild(d.path); linesAbout.appendChild(d.dot);
+  });
+
+  // 落款胶囊：两层文字交叉淡入淡出，尺寸从量好的旧尺寸过渡到新尺寸；每次重开都回到第一句
+  var creditBtn = document.getElementById('credit'), layerA = document.getElementById('credit-a'), layerB = document.getElementById('credit-b');
+  layerB.textContent = '开发伙伴：' + (site.credits || []).join(' · ');
+  var creditState = 'a', creditSize = null;
+  function measureCredit() {
+    creditBtn.style.transition = 'none'; creditBtn.style.width = ''; creditBtn.style.height = '';
+    var cs = getComputedStyle(creditBtn);
+    var px = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+    var py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    var ra = layerA.getBoundingClientRect(), rb = layerB.getBoundingClientRect();
+    creditSize = { a: [ra.width + px, ra.height + py], b: [rb.width + px, rb.height + py] };
+    applyCreditSize(false);
+  }
+  function applyCreditSize(animate) {
+    if (!creditSize) return;
+    var s = creditSize[creditState];
+    if (!animate) creditBtn.style.transition = 'none';
+    creditBtn.style.width = s[0].toFixed(1) + 'px'; creditBtn.style.height = s[1].toFixed(1) + 'px';
+    if (!animate) { void creditBtn.offsetWidth; creditBtn.style.transition = ''; }
+    layerA.classList.toggle('is-on', creditState === 'a'); layerB.classList.toggle('is-on', creditState === 'b');
+    layerA.setAttribute('aria-hidden', creditState !== 'a'); layerB.setAttribute('aria-hidden', creditState !== 'b');
+  }
+  function flipCredit() { creditState = creditState === 'a' ? 'b' : 'a'; applyCreditSize(true); }
+  function resetCredit() { creditState = 'a'; layerA.classList.add('is-on'); layerB.classList.remove('is-on'); if (creditSize) applyCreditSize(false); }
+
+  // ---------- 每一帧 ----------
+  function tick(t) {
+    // 1. 层位移
+    levelList.forEach(function (L) {
+      if (L.anim) {
+        var k = Math.min(1, (t - L.t0) / L.dur);
+        L.x = L.from + (L.to - L.from) * pushEase(k);
+        if (k >= 1) { L.x = L.to; L.anim = false; }
+      }
+      L.el.style.transform = 'translate3d(' + (L.x * W).toFixed(2) + 'px,' + L.y.toFixed(2) + 'px,0)';
+    });
+    // 2. 漂浮
+    floats.forEach(function (f) {
+      var o = reduce ? { x: 0, y: 0 } : floatOffset(f, t);
+      f._o = o;
+      f.style.transform = 'translate3d(' + o.x.toFixed(2) + 'px,' + o.y.toFixed(2) + 'px,0)';
+    });
+    if (mouse.has && !reduce) {
+      mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
+      bg.style.transform = 'translate3d(' + (mouse.x * -12).toFixed(2) + 'px,' + (mouse.y * -12).toFixed(2) + 'px,0)';
+    }
+    // 3. 需要时量一次布局（背后被关于缩小时不量，等它回来）
+    if (needMeasure && !(about.shown && about.p > 0)) { measureAll(); needMeasure = false; }
+    // 4. 流里的线：画看得见的层，以及下一层（在屏幕右边外面，线伸向右边）
+    var nxt = nextOf(current);
+    linkDefs.forEach(function (d) {
+      var show = d.a.base && d.b.base && (Math.abs(d.level.x) < 0.995 || d.level.name === nxt);
+      if (!show) { if (d.on) { d.on = false; d.path.style.display = 'none'; d.dot.style.display = 'none'; } return; }
+      if (!d.on) { d.on = true; d.path.style.display = ''; d.dot.style.display = ''; }
+      drawLink(d, rectNow(d.a), rectNow(d.b));
+    });
+    if (linesAlpha.v !== linesAlpha.to) {
+      var ka = clamp01((t - linesAlpha.t0) / 900);
+      linesAlpha.v = linesAlpha.from + (linesAlpha.to - linesAlpha.from) * pushEase(ka);
+      if (ka >= 1) linesAlpha.v = linesAlpha.to;
+    }
+    linesG.style.opacity = linesAlpha.v.toFixed(3);
+    // 5. 返回箭头
+    chevronTick(t);
+    // 6. 关于
+    aboutTick(t);
+    var showAbout = about.shown && about.lp > 0;
+    aboutLinks.forEach(function (d) {
+      if (!showAbout || !d.a.base || !d.b.base) { d.path.style.display = 'none'; d.dot.style.display = 'none'; return; }
+      d.path.style.display = ''; d.dot.style.display = '';
+      drawLink(d, rectAbout(d.a), rectAbout(d.b));
+      d.path.style.strokeDashoffset = (1 - about.lp).toFixed(3);
+      d.dot.style.opacity = about.lp.toFixed(2);
+    });
+    requestAnimationFrame(tick);
+  }
+  setLinesTarget(current === 'home' ? 0 : 1, true);
+  if (location.hash === '#about') openAbout(false);
+  requestAnimationFrame(tick);
+
+  // 调试出口：控制台里看各层位置和当前手势
+  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, lines: linesAlpha.v.toFixed(2), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
+})();
