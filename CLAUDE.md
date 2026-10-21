@@ -3,35 +3,66 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目
-- 7Spot：JUN7 的个人网站，https://7spot.github.io 。发布好玩的小软件/小组件和生活内容。
-- 受众：完全不懂代码的人。文案中文、口语化，步骤像说明书，不出现术语。
-- 站名 7Spot，作者署名 JUN7，两者不混。
+- 7Spot：JUN7 的个人网站，https://7spot.github.io 。发布好玩的小东西。
+- 受众：完全不懂代码的人。文案中文、口语化，不出现术语，不用代码梗。
+- 全站用词：只用「小东西」「同桌」，不用英文名；英文只出现 7Spot、zzz。
 - 仓库公开，所有文件和提交记录都能被看到。
 
+## 设计理念（作者原话整理，接力者先读这段）
+- 整站是一个**直观的 flow view**：一层一层往右推，线表示来路和去路。第一层是站本身的状态（今天醒过 / 在造梦 / N 天前醒过 / 还没醒过），往右是小东西，再往右是某个小东西的详情。背景不动，球在动。
+- 线是流的一部分：除首页外每一层都有线，左边的线通向来路，右边的线通向去路（下一层唯一时）。首页没有线，离开首页线渐显，回到首页线渐隐。线必须从始至终贴着球，任何速度、任何中途反向都不能脱开，这是硬要求。
+- **关于独立于网站的任何功能**，它是作者的理念，不是网站本身。所以关于不在流里、不参与左右滑动：点一下「关于」，像灵光乍现一样炸开成一个新页面，三句话三个球，再点空白处收回去。
+- 风格：苹果式的克制、慢、顺。动效要有但不刻意；任何抖动、顿挫、割裂感作者都会立刻指出。不要鼠标跟随（会抖），只要随机漂浮。球永远正圆。炸开的起爆点是失焦的柔光，不要清晰的亮点和硬边圆环（作者嫌复古）。
+- 可点性规则：**抽象的球不可点，有内容的球可点，胶囊是按钮**。首页的 7Spot 球只表达状态；小东西层的同桌球有图标有字，可点。一个页面只有一个主动作：蓝色玻璃胶囊是主按钮（在右），普通毛玻璃胶囊是次按钮（在左）。叙述文字里不内嵌链接，文字是文字，按钮是按钮。
+- 文案：中文，口语，不出现术语和代码梗；大字是梗、小字是解释，看的人觉得有意思的同时知道是什么意思。
+- 作者会先看效果再逐条提意见，每轮改完都要用 shot.js 截图自查（含动画中途的帧）再交付。
+
 ## 技术
-- 纯静态 HTML/CSS/JS。无构建、无框架、无包管理、无测试。
-- `.nojekyll`：GitHub 原样托管，不经 Jekyll。
-- 页面须适配手机宽度和深色模式。
+- 纯静态 HTML/CSS/JS，无构建、无框架、无包管理、无测试、不用 fetch。双击 index.html 就能看。
+- `.nojekyll`：GitHub 原样托管。
+- 须适配手机宽度、深色模式、prefers-reduced-motion。
+
+## 结构（单页，一层一层往右推）
+- 层级 = `section.level[data-level]`，`data-parent` 指父层，`data-parent-node` 是父层里与本层相连的节点选择器。网址 hash 即层级：`#things` `#deskmate`，无 hash 为 home；`#about` 是关于页（不是层）。
+- 推层：每层的位移 x（-1 左 / 0 中 / +1 右）由 `motion.js` 逐帧驱动（iOS 曲线 bezier(.32,.72,0,1)，900ms，可中途反向、可跟手），不用 CSS 过渡。背景 `.bg` 不动。
+- 连线：`#lines`（SVG）每帧重画，除首页外所有可见层都连。节点屏幕位置 = 层内基准位置（只在窗口变化 / 层内滚动 / 文案变化 / 字体加载后量一次）+ 层位移 × 宽 + 漂浮偏移，线和气泡用同一组数字，所以任何速度下都贴着。端点落在节点边缘（`data-shape` circle/rect），微弯曲线，靠屏幕左右边缘由 `#edgeMask` 渐变淡出。画哪些线：|x|<1 的层，加上 `nextOf(current)` 那一层（在屏幕右边外面，线伸向右边）。整组线的透明度 `linesAlpha`：首页 0，其他 1，切换时 900ms 渐变。节点标 `data-link-from` 可改从别的节点连。
+- 节点：`.bubble` 毛玻璃气泡，`.glass` 毛玻璃卡片，`.cap` 胶囊按钮，外层 `.float` 负责漂浮（三个慢周期叠加，±24px，无鼠标跟随；用户明确不要跟随）。背景只做极轻的反向视差。
+- app 图标 `.app-icon`（小东西层球里的小图标、详情页的大图标）和主按钮是同一块玻璃：同一组 --lg-* 变量，浅色淡蓝配深色爪印，深色蓝玻璃配白爪印。换真图标时保留这个玻璃壳，图放里面。
+- 「小东西」主按钮 `.cap-primary` 是 Liquid Glass：蓝色玻璃（--lg-a/b/c 三段渐变；浅色模式 alpha 约 0.3 配深色字，深色模式 alpha 约 0.5 配白字，饱和度两边一样，作者定的），低模糊让背景透过来、左上高光、渐变亮边、底部内阴影显厚度、按下缩 0.97。**悬停时整颗不动、高光不平移**，只变亮和加深影子：壳体一动，折射里的背景就会和壳体错开，作者看到的「白色分裂下沉」就是这个；Chrome 用 `#lg-refract`（feImage 位移贴图 + feDisplacementMap）做边缘折射，Safari 不支持 backdrop-filter 里的 SVG 滤镜，`.no-refract`（UA 判断）退回普通毛玻璃。「关于」按钮保持普通毛玻璃，作者定的。
+- 导航（作者定的：没有边缘箭头，只有左右滑动和点指定区域）：滑动跟手，触控板两指（wheel）、手指、鼠标按住，三种输入共用 dragBegin / dragUpdate / dragEnd，松手超过 30% 或快速甩动就翻层，否则弹回；从球、胶囊上按下也能拖。指定区域：首页两个胶囊、小东西层的球、底部圆点 `#trail`（首页不显示，只画走过的路，没有下一层的点）、返回箭头、关于的落款和空白。键盘 ← → 和浏览器返回保留但不显示。层级用 history.pushState 记录。
+- 点击判定（作者定的）：**按下松手就是点击，不看位移**；只有这次滑动真的翻了层（dragEnd 返回 true）才吞掉随后的那一次 click。链接加 draggable=false 并拦 dragstart，不然浏览器会把链接当可拖拽的东西抢走手势。
+- 返回箭头 `.back-chevrons`：每个非首页层一个，三个向左的箭头，位置由 chevronTick 每帧贴着该层第一个节点的左边、落在来路的线上（窄屏放不下就挪到节点左上角上方）；从靠球的那个起依次点亮，整组慢漂，周期 2.4s；点一下返回。这是唯一的「可以返回」提示，不提示下一层。
+- 状态：`siteState()`，优先级 今天醒过 > 造梦 > N 天前醒过 > 还没醒过。数据：`wakes` 发布记录（口令「醒了：一句话」）+ `dreaming` 开关（口令「造梦」/「不造梦」）。没有天数阈值。文案：今天醒过 + 那句话；昨天 / 前天 / N 天前醒过 + 「也许有可能大概现在睡着了」；在造梦 + 正在开发：「同桌」；还没醒过 + 「也许有可能大概一直在睡」。zzz 在非今天醒过时出现。小东西徽标：造梦中（status developing）/ 今天醒过 / 昨天醒过 / N 天前醒过，没有就隐藏。
+- 关于页 `#about-page`：固定全屏覆盖层。一个 0→1 的进度 `about.p` 驱动全部（球位置 easeOutBack、三条线 pathLength、遮罩透明度、模糊半径 0→16px、背后 `.stage` 缩放 1→0.97），`openAbout()` / `closeAbout()` 只改 `about.target` 并从当前 p 起新的 tween，所以开到一半能收、收到一半能开。开：匀速 1300ms；关：easeInOut 700ms。遮罩 / 模糊 / 缩放用限速跟随（最快 220ms 走完），开时先到位、关时跟进度一起退，中途反向不跳。起爆点是失焦柔光（`.spark-core` 模糊 10px + `.spark-halo` 模糊 32px）+ 碎光。球位置由 `--about-r` / `--about-kx` 按三档尺寸定，落款胶囊 `.about-credit` 由 `--credit-ky` 定，`data-burst-delay` 让它最后炸进来。线在 `.lines-about-svg` 里（关于页内部，遮罩之上）。target=1 期间 `.stage` 加 inert、点击处理忽略一切跳层，只认落款翻面和空白处收回（开到一半点空白也收）；关闭一开始就去掉 inert、遮罩 pointer-events none，所以收到一半能点「关于」重开。Esc / 浏览器返回都能关。
+- 落款胶囊 `#credit`：两层文字 `.credit-a`「作者是我和几个 AI，它们说它们不做梦，我不信」/ `.credit-b`「开发伙伴：」+ `site-data.js` 的 `credits` 用 · 连接（现为 JUN7 · Claude Fable 5.1 · ChatGPT GPT-6）。`measureCredit()` 在关于打开的第一帧量两种状态的尺寸，`flipCredit()` 切类名并把宽高设成目标尺寸，CSS 过渡（宽高 0.5s push 曲线，文字交叉淡入淡出 + 轻微位移 + 模糊），中途再点自然反向。网格轨道用 minmax(0,1fr)，不然隐藏层会把轨道撑宽导致文字被裁。每次重开关于 `resetCredit()` 回到第一句。换模型只改 `credits`。
+- `#statebar` 右上角四个预览按钮（today / ago3 / dreaming / never）：默认 display none，网址带 `?preview` 或 `?state=` 时给 body 加 `.preview` 才显示。给作者看效果用，线上访客看不到。
+- 三档尺寸：电脑 >1024 / iPad 600–1024 / 手机 <600，尺寸全在 :root 变量里。
+
+## 加一样小东西
+1. `assets/site-data.js` 的 `items` 加一条（id、no、title、sub、bubble 气泡内换行文案、kind 如「Mac 应用」、status）。气泡（图标 + 文案）自动生成在 things 层。
+2. `index.html` 加一个 `section.level data-level="<id>" data-parent="things" data-parent-node='[data-node="item:<id>"]'`，里面放 `.glass.detail[data-node][data-shape="rect"]`。
 
 ## 命令
-- 本地预览：`python3 -m http.server 8000` → http://localhost:8000
+- 预览：双击 index.html。调试参数 `?preview`（显示右上角状态按钮）、`?state=today|ago3|dreaming|never`、`?theme=dark|light`，可与 hash 连用。
+- 截图自查：见上级目录 CLAUDE.md 的 shot.js。
 - 发布（仅用户说「发布」时）：`git switch main && git merge --ff-only dev && git push && git switch dev`，1–2 分钟生效。
 - 查发布状态：`gh api repos/7Spot/7Spot.github.io/pages --jq .status`
 
-## 目录约定
-- `index.html` 首页
-- `projects/<slug>/index.html` 单个作品页；下载文件放 `projects/<slug>/files/`
-- `assets/` 公共 css / 图片
-- 文件名小写英文加连字符；页面间相对路径
+## 文件
+- `index.html` 全站唯一页面
+- `assets/site-data.js` 内容数据：小东西、起床记录、天数阈值
+- `assets/style.css` 全部样式，变量在 :root
+- `assets/motion.js` 状态、推层、连线、漂浮、光点
+- `assets/img/` 帧序列、截图、视频（待加）
+- `PLAN.md` 计划与已定事项
 
 ## Git
-- 两个分支：`dev` 工作区，`main` 已发布版本。网页只跟 main 走。
-- 所有改动在 dev 提交。不在 main 上直接提交。
+- 两个分支：`dev` 工作区，`main` 已发布版本。网页只跟 main 走。所有改动在 dev 提交，不在 main 上直接提交。
 - 用户没说「推送」不推送；没说「发布」不合并 main。推送 dev 只是备份，网页不变。
+- 用户说「醒了：一句话」→ 在 `assets/site-data.js` 的 `wakes` 顶部加一条 {date, item, note}。用户说「造梦」/「不造梦」→ 改 `dreaming`。推送、发布、改代码都不改变状态。
 - `origin` 走 SSH 别名 `github.com-jun7`。账号规则在上级目录 `../CLAUDE.md`，不要改 remote 和 user.*。
-- 提交信息：中文一句话，说明改了什么。
-- 单文件 < 100MB；大下载包放 GitHub Releases，不进仓库。
+- 提交信息：中文一句话。单文件 < 100MB；大下载包放 GitHub Releases。
 
 ## 状态
-- main：占位首页。
-- 待做：正式首页；桌宠小组件预告页（demo 未完成，素材待用户提供）。
+- main = dev：v9（2026-10-22 发布）：分层推进、连线常贴、关于炸开页（可打断）、蓝色 Liquid Glass 主按钮与同款 app 图标、三个向左的返回箭头、按下松手即点击、预览按钮默认隐藏。图标是爪印占位。
+- 待做：素材（帧序列、录屏）；真图标；小东西多了之后 things 层的多气泡排布；Safari / iPhone 手势实测。
