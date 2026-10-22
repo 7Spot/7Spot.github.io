@@ -24,6 +24,7 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.95); --lg-rim-lo: rgba(0, 40, 110, 0.16);
   --lg-spec: rgba(255, 255, 255, 0.95); --lg-thick: rgba(0, 30, 90, 0.1);
   --lg-text: var(--fg); --lg-text-shadow: none; --lg-shadow: rgba(10, 132, 255, 0.18);
+  --brand-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.26);   /* 「7Spot.」的影子：一层贴着的薄影 + 一层柔和的黑影，像微微浮起来；深色改成一圈淡光（黑影在黑底上看不见） */
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --gutter: 16px;
@@ -32,7 +33,7 @@
   --status: 32px; --card-w: 600px;
   --text-bubble: 14px; --text-about: 16px;
   --level-pad: 72px 64px 100px; --level-pad-sym: 72px 64px;   /* 球在中线上的层用对称内边距 */
-  --lift: 96px;   /* 球心比屏幕中线高多少：首页球下面还挂着状态和「关于我」，提这么多整组的重心才在正中；小东西层共用，两颗球同一条线 */
+  --lift: 103px;   /* 球心比屏幕中线高多少：首页球下面还挂着名字、状态和「关于我」，提这么多整组的重心才在正中；小东西层共用，两颗球同一条线 */
   --about-r: 230px; --about-kx: 1.05; --credit-ky: 1.32;
   --veil: rgba(245, 245, 247, 0.62);
   color-scheme: light;
@@ -43,7 +44,7 @@
     --status: 28px; --card-w: 560px;
     --text-bubble: 13px; --text-about: 15px;
     --level-pad: 64px 56px 96px; --level-pad-sym: 64px 56px;
-    --lift: 90px;
+    --lift: 97px;
     --about-r: 190px; --about-kx: 1; --credit-ky: 1.38;
   }
 }
@@ -53,7 +54,7 @@
     --status: 24px; --card-w: 92vw;
     --text-bubble: 12px; --text-about: 13.5px;
     --level-pad: 64px 16px 92px; --level-pad-sym: 64px 16px;
-    --lift: 86px;
+    --lift: 92px;
     --about-r: 140px; --about-kx: 0.7; --credit-ky: 1.55;
   }
 }
@@ -73,6 +74,7 @@
     --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
     --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
     --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
+    --brand-shadow: 0 0 4px rgba(255, 255, 255, 0.2), 0 2px 16px rgba(255, 255, 255, 0.38);
     color-scheme: dark;
   }
 }
@@ -91,6 +93,7 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
   --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
   --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
+  --brand-shadow: 0 0 4px rgba(255, 255, 255, 0.2), 0 2px 16px rgba(255, 255, 255, 0.38);
   color-scheme: dark;
 }
 
@@ -164,7 +167,9 @@ a, button, img, svg { -webkit-user-drag: none; }
 .level[data-level="home"], .level[data-level="things"] { padding: var(--level-pad-sym); }
 .home-grid { height: 100%; gap: 0; grid-template-rows: minmax(0, calc(50% - var(--lift) - var(--bubble-home) / 2)) auto minmax(max-content, 1fr); }
 .home-grid .home-float { grid-row: 2; }
-.home-below { grid-row: 3; align-self: start; padding-top: 18px; display: grid; justify-items: center; gap: 8px; }
+.home-below { grid-row: 3; align-self: start; padding-top: 20px; display: grid; justify-items: center; gap: 0; }   /* 球会漂浮（最多 ±24px），留够了漂下来也只是擦到名字 */
+.home-below .status-h { margin-top: 2px; }   /* 名字和状态贴紧，读成一句 */
+.home-below .status-p { margin-top: 8px; }
 
 /* ---------- 毛玻璃 ---------- */
 .glass, .bubble, .statebar {
@@ -240,9 +245,11 @@ a, button, img, svg { -webkit-user-drag: none; }
 .zzz span:nth-child(3) { font-size: 22px; }
 
 /* ---------- 第一层文字 ---------- */
-/* 「7Spot.」：首页左上角的小标（作者定的：大字放球上面或球下面都会和球抢中心）。属于首页这一层，推层时跟着一起走 */
-.brand-h { position: absolute; left: 28px; top: 22px; z-index: 1; font-size: 24px; line-height: 1.2; letter-spacing: -0.02em; }
-@media (max-width: 600px) { .brand-h { left: 18px; top: 16px; font-size: 20px; } }
+/* 「7Spot.」：球下面的第一行，和「在造梦」连读成一句「7Spot. 在造梦」。小字，带一点影子，和别的字区分开，像微微浮起来
+   （作者定的：大字放球上面或球下面都和球抢中心，放左上角又太远） */
+.brand-h { font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; text-shadow: var(--brand-shadow); }
+.brand-h .dot { box-shadow: var(--brand-shadow); }
+@media (max-width: 600px) { .brand-h { font-size: 19px; } }
 .status-h { font-size: var(--status); font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
