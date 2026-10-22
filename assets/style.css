@@ -24,6 +24,7 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.95); --lg-rim-lo: rgba(0, 40, 110, 0.16);
   --lg-spec: rgba(255, 255, 255, 0.95); --lg-thick: rgba(0, 30, 90, 0.1);
   --lg-text: var(--fg); --lg-text-shadow: none; --lg-shadow: rgba(10, 132, 255, 0.18);
+  --pet-shadow: rgba(0, 0, 0, 0.16);   /* 详情卡里同桌脚下的影子 */
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --gutter: 16px;
@@ -73,6 +74,7 @@
     --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
     --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
     --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
+    --pet-shadow: rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
@@ -91,6 +93,7 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
   --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
   --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
+  --pet-shadow: rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
@@ -388,11 +391,19 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .features li:first-child { border-top: 0; padding-top: 0; }
 .features b { font-weight: 600; }
 .features span { color: var(--muted); font-size: 15px; }
+/* 详情卡里的同桌：头部和功能列表之间一行，动图按高度缩放（两种姿势同一比例尺：趴着 104px、坐着 148px），脚下一道淡影。
+   高度写死，图没到之前位置就留好，卡片不会跳；上边往头部收 14px，让狗头贴近「获取」（作者要的） */
+.pet-stage { --pet-h: 104px; --pet-sh: 200px; position: relative; height: var(--pet-h); margin: -14px 0 -6px; display: flex; justify-content: center; }   /* flex 不是 grid：图的 height:100% 要靠容器的定高，grid 的 auto 行算不出来 */
+.pet-stage.is-sit { --pet-h: 148px; --pet-sh: 150px; }
+.pet-stage .pet { position: relative; z-index: 1; display: block; height: 100%; width: auto; pointer-events: none; }
+.pet-shadow { position: absolute; left: 50%; bottom: 2px; width: var(--pet-sh); height: 16px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at center, var(--pet-shadow), rgba(0, 0, 0, 0) 70%); }
 .req { color: var(--muted); font-size: 14px; }
 .status-line { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
 @media (max-width: 600px) {
   .app-head { gap: 14px; }
   .app-icon.big { width: 64px; height: 64px; }
+  .pet-stage { --pet-h: 92px; --pet-sh: 176px; }
+  .pet-stage.is-sit { --pet-h: 131px; --pet-sh: 132px; }
   .features li { grid-template-columns: 5.5em 1fr; gap: 12px; }
 }
 
