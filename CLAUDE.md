@@ -21,6 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 纯静态 HTML/CSS/JS，无构建、无框架、无包管理、无测试、不用 fetch。双击 index.html 就能看。
 - `.nojekyll`：GitHub 原样托管。
 - 须适配手机宽度、深色模式、prefers-reduced-motion。
+- 禁双击放大：html / body / 关于页 `touch-action: manipulation`（Safari 只认它和 none，舞台层的 pan-y 它不算），再加 touchend 300ms 内第二次抬手 preventDefault 兜底。不改 viewport 的 user-scalable（iPhone 不理，安卓会禁掉双指放大）。
 
 ## 结构（单页，一层一层往右推）
 - 层级 = `section.level[data-level]`，`data-parent` 指父层，`data-parent-node` 是父层里与本层相连的节点选择器。网址 hash 即层级：`#things` `#deskmate`，无 hash 为 home；`#about` 是关于页（不是层）。
@@ -30,9 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - app 图标 `.app-icon`（小东西层球里的小图标、详情页的大图标）和主按钮是同一块玻璃：同一组 --lg-* 变量，浅色淡蓝配深色爪印，深色蓝玻璃配白爪印。换真图标时保留这个玻璃壳，图放里面。
 - 「小东西」主按钮 `.cap-primary` 是 Liquid Glass：蓝色玻璃（--lg-a/b/c 三段渐变；浅色模式 alpha 约 0.3 配深色字，深色模式 alpha 约 0.5 配白字，饱和度两边一样，作者定的），低模糊让背景透过来、左上高光、渐变亮边、底部内阴影显厚度、按下缩 0.97。**悬停时整颗不动、高光不平移**，只变亮和加深影子：壳体一动，折射里的背景就会和壳体错开，作者看到的「白色分裂下沉」就是这个；Chrome 用 `#lg-refract`（feImage 位移贴图 + feDisplacementMap）做边缘折射，Safari 不支持 backdrop-filter 里的 SVG 滤镜，`.no-refract`（UA 判断）退回普通毛玻璃。首页只有这一颗胶囊；「关于我」是文字链接 `.about-link`，见可点性规则。
 - 导航（作者定的：没有边缘箭头，只有左右滑动和点指定区域）：滑动跟手，触控板两指（wheel）、手指、鼠标按住，三种输入共用 dragBegin / dragUpdate / dragEnd，松手超过 30% 或快速甩动就翻层，否则弹回；从球、胶囊上按下也能拖。指定区域：首页的胶囊和「关于我」、小东西层的球、底栏 `#trail`（见下一条）、返回箭头、关于的落款和空白。键盘 ← → 和浏览器返回保留但不显示。层级用 history.pushState 记录。
-- 底栏 `#trail`：只画走过的路（首页不显示，没有下一层的点）。能点也能左右拖：拖底栏走的是和拖内容同一条路（dragBegin / dragUpdate / dragEnd，内容一起跟手），底栏自己整串跟手（tanh 软限位，最多 72px），朝拖的方向那头跟得紧、另一头慢半拍，所以线被拉长、拉细（scaleX / scaleY，`trailTick()` 每帧算），松手弹簧回位（ω 14、ζ 0.62，带着手速）。换层时底栏不重建 DOM：每段 `.trail-seg`（线 + 点），多出来的段收起（`.is-out` 宽度到 0 再拿掉）、缺的段长出、刚收起的同名段直接复活，标题淡出淡入，整串中心不跳。从底栏（拖或点圆点）回到首页，底栏留两秒再隐去（`.is-lingering`，经 `viaTrail()`）；别的方式回首页照常立刻隐。
+- 底栏 `#trail`：只画走过的路（首页不显示，没有下一层的点）。能点也能左右拖，是定位逻辑（像拖滚动条）：点从左到右越来越深，往右拖是往深处走、往左拖是往回走，内容反着滑；走的是和拖内容同一条路（dragBegin / dragUpdate / dragEnd，位移取反）。底栏自己朝手指方向整串跟手（tanh 软限位，最多 72px），朝拖的方向那头跟得紧、另一头慢半拍，所以线被拉长、拉细（scaleX / scaleY，`trailTick()` 每帧算），松手弹簧回位（ω 14、ζ 0.62，带着手速）。换层时底栏不重建 DOM：每段 `.trail-seg`（线 + 点），多出来的段收起（`.is-out` 宽度到 0 再拿掉）、缺的段长出、刚收起的同名段直接复活，标题淡出淡入，整串中心不跳。从底栏（拖或点圆点）回到首页，底栏留两秒再隐去（`.is-lingering`，经 `viaTrail()`）；别的方式回首页照常立刻隐。
 - 点击判定（作者定的）：**按下松手就是点击，不看位移**；只有这次滑动真的翻了层（dragEnd 返回 true）才吞掉随后的那一次 click。链接加 draggable=false 并拦 dragstart，不然浏览器会把链接当可拖拽的东西抢走手势。拖层从该层当前位置接着拖（`drag.base`），正在动的时候抓住也不跳。
-- 返回箭头 `.back-chevrons`：每个非首页层一个，三个向左的箭头，位置由 chevronTick 每帧贴着该层第一个节点的左边、落在来路的线上（窄屏放不下就挪到节点左上角上方）；从靠球的那个起依次点亮，整组慢漂，周期 2.4s；点一下返回。这是唯一的「可以返回」提示，不提示下一层。
+- 返回箭头 `.back-chevrons`：每个非首页层一个，三个向左的箭头，位置由 chevronTick 每帧贴着该层第一个节点的左边、落在来路的线上（窄屏放不下就挪到节点左上角上方；放哪按节点的静止位置 base.l 定，不看此刻滑到哪，不然推层中途会瞬移）；从靠球的那个起依次点亮，整组慢漂，周期 2.4s；点一下返回。这是唯一的「可以返回」提示，不提示下一层。
 - 状态：`siteState()`，优先级 今天醒过 > 造梦 > N 天前醒过 > 还没醒过。数据：`wakes` 发布记录（口令「醒了：一句话」）+ `dreaming` 开关（口令「造梦」/「不造梦」）。没有天数阈值。文案：今天醒过 + 那句话；昨天 / 前天 / N 天前醒过 + 「也许有可能大概现在睡着了」；在造梦 + 正在开发：「同桌」；还没醒过 + 「也许有可能大概一直在睡」。zzz 在非今天醒过时出现。小东西徽标：造梦中（status developing）/ 今天醒过 / 昨天醒过 / N 天前醒过，没有就隐藏。
 - 关于页 `#about-page`：固定全屏覆盖层。一个 0→1 的进度 `about.p` 驱动全部（球位置 easeOutBack、三条线 pathLength、遮罩透明度、模糊半径 0→16px、背后 `.stage` 缩放 1→0.97），`openAbout()` / `closeAbout()` 只改 `about.target` 并从当前 p 起新的 tween，所以开到一半能收、收到一半能开。开：匀速 1300ms；关：easeInOut 700ms。遮罩 / 模糊 / 缩放用限速跟随（最快 220ms 走完），开时先到位、关时跟进度一起退，中途反向不跳。起爆点是失焦柔光（`.spark-core` 模糊 10px + `.spark-halo` 模糊 32px）+ 碎光。球位置由 `--about-r` / `--about-kx` 按三档尺寸定，落款胶囊 `.about-credit` 由 `--credit-ky` 定，`data-burst-delay` 让它最后炸进来。线在 `.lines-about-svg` 里（关于页内部，遮罩之上）。target=1 期间 `.stage` 加 inert、点击处理忽略一切跳层，只认落款翻面和空白处收回（开到一半点空白也收）；关闭一开始就去掉 inert、遮罩 pointer-events none，所以收到一半能点「关于我」重开。Esc / 浏览器返回都能关。没有「点一下空白处回去」的提示（作者去掉的）。
 - 关于的三个球能点能拖（不跳转）：按下轻轻按扁（0.96），开始拖抬起一点（1.04），拖着时硬弹簧紧跟手（ω 30、ζ 0.85），松手软弹簧回原位、略过冲（ω 10、ζ 0.55）；点一下（没拖动）给缩放一个向下的冲量，弹回来就是 duang（缩放弹簧 ω 22、ζ 0.32）。限位：离原位 tanh 软限，最远球直径的 0.45 倍。状态在 `float._d`，每帧 `ballStep()` 小步积分（帧长超过 6ms 就拆步）；位移加进 `f._o`、缩放进 `rectAbout()` / `aboutMeasure()`，所以线始终贴着。球只整体缩放，不压扁（球永远正圆）。正在弹的时候抓住就从当前位置接着拖，不跳；关闭时 `releaseBall()`，完全关上 `resetBalls()`。
@@ -67,5 +68,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 状态
 - main：v9（2026-10-22 发布）：分层推进、连线常贴、关于炸开页（可打断）、蓝色 Liquid Glass 主按钮与同款 app 图标、三个向左的返回箭头、按下松手即点击、预览按钮默认隐藏。图标是爪印占位。
-- dev 比 main 多（未发布）：首页只留一颗居中的「小东西」胶囊，「关于」改成它下面的小字链接「关于我」（无图标）；底栏能拖（线被拉长）、从底栏回首页留两秒；关于球文字居中、能点能拖（弹簧）；去掉关于页底部提示。
+- dev 比 main 多（未发布）：首页只留一颗居中的「小东西」胶囊，「关于」改成它下面的小字链接「关于我」（无图标）；底栏能拖（定位逻辑，线被拉长）、从底栏回首页留两秒；返回箭头推层中途不再瞬移；禁双击放大；关于球文字居中、能点能拖（弹簧）；去掉关于页底部提示。
 - 待做：素材（帧序列、录屏）；真图标；小东西多了之后 things 层的多气泡排布；Safari / iPhone 手势实测。
