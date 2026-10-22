@@ -29,9 +29,10 @@
   --gutter: 16px;
   /* 三档尺寸：电脑 */
   --bubble-home: 200px; --bubble-item: 200px; --bubble-about: 210px;   /* 首页的球和同桌球一样大，推层时像一颗换成另一颗 */
-  --brand: 80px; --status: 32px; --card-w: 600px;
+  --status: 32px; --card-w: 600px;
   --text-bubble: 14px; --text-about: 16px;
-  --level-pad: 72px 64px 100px; --level-pad-sym: 72px 64px;   /* 球钉在正中的层用对称内边距 */
+  --level-pad: 72px 64px 100px; --level-pad-sym: 72px 64px;   /* 球在中线上的层用对称内边距 */
+  --lift: 96px;   /* 球心比屏幕中线高多少：首页球下面还挂着状态和「关于我」，提这么多整组的重心才在正中；小东西层共用，两颗球同一条线 */
   --about-r: 230px; --about-kx: 1.05; --credit-ky: 1.32;
   --veil: rgba(245, 245, 247, 0.62);
   color-scheme: light;
@@ -39,18 +40,20 @@
 @media (max-width: 1024px) {
   :root {
     --bubble-home: 176px; --bubble-item: 176px; --bubble-about: 190px;
-    --brand: 68px; --status: 28px; --card-w: 560px;
+    --status: 28px; --card-w: 560px;
     --text-bubble: 13px; --text-about: 15px;
     --level-pad: 64px 56px 96px; --level-pad-sym: 64px 56px;
+    --lift: 90px;
     --about-r: 190px; --about-kx: 1; --credit-ky: 1.38;
   }
 }
 @media (max-width: 600px) {
   :root {
     --bubble-home: 150px; --bubble-item: 150px; --bubble-about: 150px;
-    --brand: 56px; --status: 24px; --card-w: 92vw;
+    --status: 24px; --card-w: 92vw;
     --text-bubble: 12px; --text-about: 13.5px;
     --level-pad: 64px 16px 92px; --level-pad-sym: 64px 16px;
+    --lift: 86px;
     --about-r: 140px; --about-kx: 0.7; --credit-ky: 1.55;
   }
 }
@@ -156,13 +159,12 @@ a, button, img, svg { -webkit-user-drag: none; }
   width: 100%; margin: auto;
   display: grid; justify-items: center; gap: 8px; text-align: center;
 }
-/* 球钉在屏幕正中的层：三行网格，上下两行等分剩余空间（但不小于各自内容），中间一行是球；内边距对称，球心就是屏幕中心。
-   屏幕太矮放不下时上下两行按内容撑开，球离开正中但不重叠，整层可滚 */
+/* 球在中线上的层：三行网格，第一行的高度算出来（内边距对称，所以球心 = 屏幕中线 − --lift），中间一行是球，第三行挂字。
+   屏幕太矮时第一行缩到 0、第三行按内容撑开，整层可滚，不重叠 */
 .level[data-level="home"], .level[data-level="things"] { padding: var(--level-pad-sym); }
-.home-grid { height: 100%; gap: 0; grid-template-rows: minmax(max-content, 1fr) auto minmax(max-content, 1fr); }
-.home-grid .brand-h { align-self: end; padding-bottom: 30px; }
-.home-grid .home-float { align-self: center; }
-.home-below { align-self: start; padding-top: 18px; display: grid; justify-items: center; gap: 8px; }
+.home-grid { height: 100%; gap: 0; grid-template-rows: minmax(0, calc(50% - var(--lift) - var(--bubble-home) / 2)) auto minmax(max-content, 1fr); }
+.home-grid .home-float { grid-row: 2; }
+.home-below { grid-row: 3; align-self: start; padding-top: 18px; display: grid; justify-items: center; gap: 8px; }
 
 /* ---------- 毛玻璃 ---------- */
 .glass, .bubble, .statebar {
@@ -226,7 +228,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 
 /* zzz：造梦、N 天前醒过、还没醒过时出现 */
 .zzz {
-  position: absolute; left: calc(100% - 14px); top: -2px;   /* 往外一点，升上去时不碰到上面的「7Spot.」 */
+  position: absolute; left: calc(100% - 22px); top: -4px;
   display: flex; align-items: flex-end; gap: 2px;
   color: var(--muted); font-weight: 600; line-height: 1;
   opacity: 0; transition: opacity 0.8s var(--ease); pointer-events: none;
@@ -238,7 +240,9 @@ a, button, img, svg { -webkit-user-drag: none; }
 .zzz span:nth-child(3) { font-size: 22px; }
 
 /* ---------- 第一层文字 ---------- */
-.brand-h { font-size: var(--brand); line-height: 1.05; letter-spacing: -0.02em; }
+/* 「7Spot.」：首页左上角的小标（作者定的：大字放球上面或球下面都会和球抢中心）。属于首页这一层，推层时跟着一起走 */
+.brand-h { position: absolute; left: 28px; top: 22px; z-index: 1; font-size: 24px; line-height: 1.2; letter-spacing: -0.02em; }
+@media (max-width: 600px) { .brand-h { left: 18px; top: 16px; font-size: 20px; } }
 .status-h { font-size: var(--status); font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
@@ -296,7 +300,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 /* 小东西层：球也钉在屏幕正中（和首页的球同一条中线，线是平的），名字和标签挂在球下面；每个小东西各自一份三行网格 */
 .level[data-level="things"] .level-in { height: 100%; }
 .items { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 48px 64px; height: 100%; }
-.item { display: grid; grid-template-rows: minmax(max-content, 1fr) auto minmax(max-content, 1fr); justify-items: center; height: 100%; }
+.item { display: grid; grid-template-rows: minmax(0, calc(50% - var(--lift) - var(--bubble-item) / 2)) auto minmax(max-content, 1fr); justify-items: center; height: 100%; }
 .item .float { grid-row: 2; align-self: center; }
 .item-below { grid-row: 3; align-self: start; padding-top: 18px; display: grid; justify-items: center; gap: 10px; }
 .item .label { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
