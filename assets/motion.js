@@ -288,6 +288,15 @@
     if (bk) { e.preventDefault(); back(); }
   }, true);
   document.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  // Safari 的双击放大：CSS 的 touch-action 它只认 manipulation / none，这里再兜一层：两次抬手间隔不到 300ms 就拦掉第二次的默认行为
+  (function () {
+    var last = 0;
+    document.addEventListener('touchend', function (e) {
+      var now = performance.now();
+      if (now - last < 300) e.preventDefault();
+      last = now;
+    }, { passive: false });
+  })();
   document.addEventListener('keydown', function (e) {
     if (about.target === 1) { if (e.key === 'Escape') closeAbout(true); return; }
     if (e.key === 'Escape' || e.key === 'ArrowLeft') back();
@@ -399,8 +408,8 @@
       if (!pt || e.pointerId !== pt.id) return;
       var dx = e.clientX - pt.x0;
       if (!pt.moved) { if (Math.abs(dx) < 4) return; pt.moved = true; dragBegin('trail'); }
-      trailD.v = reduce ? 0 : trailD.grab + 72 * Math.tanh(dx / 72);   // 开头跟手，越拉越拉不动，最多 72px
-      dragUpdate(dx / W);
+      trailD.v = reduce ? 0 : trailD.grab + 72 * Math.tanh(dx / 72);   // 底栏自己朝手指方向走：开头跟手，越拉越拉不动，最多 72px
+      dragUpdate(-dx / W);   // 定位逻辑，像拖滚动条：点从左到右是越来越深，往右拖是往深处走，内容反着滑
     });
     function up(e) {
       if (!pt || e.pointerId !== pt.id) return;
@@ -511,8 +520,9 @@
     chevrons.forEach(function (c) {
       if (!c.node.base || Math.abs(c.level.x) >= 1) return;
       var r = rectNow(c.node), lx = c.level.x * W, cx, cy;
-      if (r.l >= 84) { cx = r.l - 46; cy = r.t + r.h / 2; }     // 球左边、来路的线上
-      else { cx = r.l + 30; cy = r.t - 26; }                     // 窄屏没地方：卡片左上角上方
+      // 放哪按节点的静止位置定（层停在正中时的左边缘），不看此刻滑到哪：推层中途不换位，漂浮也不会让它来回切
+      if (c.node.base.l >= 84) { cx = r.l - 46; cy = r.t + r.h / 2; }   // 球左边、来路的线上
+      else { cx = r.l + 30; cy = r.t - 26; }                             // 窄屏放不下：卡片左上角上方
       var drift = reduce ? 0 : 6 * (0.5 - 0.5 * Math.cos((t % CHEV_T) / CHEV_T * TAU));
       c.el.style.transform = 'translate3d(' + (cx - lx - drift).toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0) translate(-50%,-50%)';
       c.items.forEach(function (it, i) {

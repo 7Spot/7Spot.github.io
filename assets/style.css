@@ -93,9 +93,9 @@
 
 /* ---------- 基础 ---------- */
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; overflow: hidden; height: 100%; overscroll-behavior: none; }
+html { -webkit-text-size-adjust: 100%; overflow: hidden; height: 100%; overscroll-behavior: none; touch-action: manipulation; }   /* manipulation：禁双击放大，不禁滑动和双指缩放（Safari 只认这个和 none） */
 body {
-  margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+  margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
   background: var(--bg);
   color: var(--fg);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
@@ -301,7 +301,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 .badge[hidden] { display: none; }
 
 /* ---------- 关于：独立的一页，炸开 ---------- */
-.about-page { position: fixed; inset: 0; z-index: 12; display: none; }
+.about-page { position: fixed; inset: 0; z-index: 12; display: none; touch-action: manipulation; }
 .about-page.is-open { display: block; }
 .about-veil { position: absolute; inset: 0; background: var(--veil); opacity: 0; will-change: opacity; }
 .stage { transform-origin: 50% 50%; }
