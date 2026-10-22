@@ -64,7 +64,7 @@
       <p class="status-p" id="status-p"></p>
       <div class="actions">
         <a class="cap cap-primary" href="#things" data-go="things" draggable="false">小东西<span class="chev" aria-hidden="true">›</span></a>
-        <a class="about-link" href="#about" data-go="about" draggable="false"><span class="spark-ico" aria-hidden="true">✦</span>关于我</a>
+        <a class="about-link" href="#about" data-go="about" draggable="false">关于我</a>
       </div>
     </div>
   </section>
@@ -116,11 +116,10 @@
     <div class="about-ball" data-pos="3"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:3" data-shape="circle" data-link-from="about:2"><span class="bubble-text">科幻里的奇点，似乎并没有那么遥远</span></div></div></div></div>
     <div class="about-credit"><div class="burst"><div class="float"><button class="credit" type="button" id="credit" data-node="credit" data-shape="rect" data-burst-delay="420" aria-label="开发伙伴"><span class="credit-layer credit-a is-on" id="credit-a">作者是我和几个 AI，它们说它们不做梦，我不信</span><span class="credit-layer credit-b" id="credit-b" aria-hidden="true"></span></button></div></div></div>
   </div>
-  <p class="about-hint">点一下空白处回去</p>
 </section>
 
-<!-- 底部：走过的路，一串点（首页不显示） -->
-<nav class="trail" id="trail" aria-label="路径"></nav>
+<!-- 底部：走过的路，一串点（首页不显示）。能点也能左右拖，拖的时候线会被拉长 -->
+<nav class="trail" id="trail" aria-label="路径"><div class="trail-dots" id="trail-dots"></div><span class="trail-label" id="trail-label"></span></nav>
 
 <!-- 临时：预览几种状态，做完拆掉 -->
 <div class="statebar" id="statebar" aria-label="预览状态">
