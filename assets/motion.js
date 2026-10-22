@@ -229,11 +229,20 @@
       trailLive.push(it);
     }
     trailLive.forEach(function (it) { it.dot.classList.toggle('is-current', it.name === current); });
-    var title = titleOf(current);
-    if (trailLabel.textContent !== title) {
-      if (!trailLabel.textContent || reduce) trailLabel.textContent = title;
-      else { var my = ++labelSwap; trailLabel.classList.add('is-swap'); setTimeout(function () { if (my !== labelSwap) return; trailLabel.textContent = titleOf(current); trailLabel.classList.remove('is-swap'); }, 250); }
-    }
+    setTrailLabel(titleOf(current));
+  }
+  // 标题淡出、换字、淡入；再叫一次就作废上一次没换完的
+  function setTrailLabel(title) {
+    var my = ++labelSwap;
+    if (trailLabel.textContent === title) { trailLabel.classList.remove('is-swap'); return; }
+    if (!trailLabel.textContent || reduce) { trailLabel.textContent = title; return; }
+    trailLabel.classList.add('is-swap');
+    setTimeout(function () { if (my !== labelSwap) return; trailLabel.textContent = title; trailLabel.classList.remove('is-swap'); }, 250);
+  }
+  // 拖底栏时先把目标点亮起来、标题换成目标；往前没有点，只换标题
+  function trailPreview(name) {
+    if (trailLive.some(function (it) { return it.name === name; })) trailLive.forEach(function (it) { it.dot.classList.toggle('is-current', it.name === name); });
+    setTrailLabel(titleOf(name));
   }
   // 底栏每帧：拖着时 v 跟手，松手后弹簧回 0。领头的点跟得紧、拖尾的点慢半拍，线按两端的差拉长、拉细
   function trailTick(dt) {
@@ -390,7 +399,8 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden) abort(); });
   })();
 
-  // ---------- 底栏：按住左右拖，走的是和拖内容同一条路（dragBegin / dragUpdate / dragEnd）；整串跟手，线被拉长。从底栏回到首页，底栏留两秒再隐去 ----------
+  // ---------- 底栏：按住左右拖是定位，像拖滚动条。拖的时候页面不动，只有底栏跟手、线被拉长，目标点先亮、标题先换；松手才真的切层。从底栏回到首页，底栏留两秒再隐去 ----------
+  var TRAIL_STEP = 48;   // 手指每走 48px 算一格：往左一格回上一层，再一格回首页；往右一格去唯一的下一层
   function startLinger() { clearTimeout(trailD.lingerTimer); trail.classList.add('is-lingering'); trailD.lingerTimer = setTimeout(function () { trail.classList.remove('is-lingering'); }, 2000); }
   function stopLinger() { clearTimeout(trailD.lingerTimer); trail.classList.remove('is-lingering'); }
   function viaTrail(fn) { trailD.fromTrail = true; var r = fn(); trailD.fromTrail = false; if (current === 'home') startLinger(); else stopLinger(); return r; }
@@ -398,7 +408,7 @@
     var pt = null;
     trail.addEventListener('pointerdown', function (e) {
       if (about.target === 1 || e.button !== 0 || pt) return;
-      pt = { id: e.pointerId, x0: e.clientX, moved: false };
+      pt = { id: e.pointerId, x0: e.clientX, moved: false, steps: 0, target: current };
       try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
       clearTimeout(trailD.lingerTimer); trail.classList.add('is-lingering');   // 按着的时候不隐去
       trailD.anim = false; trailD.held = true; trailD.grab = trailD.v;   // 正在弹回也能抓住，从当前位置接着拖
@@ -407,16 +417,22 @@
     window.addEventListener('pointermove', function (e) {
       if (!pt || e.pointerId !== pt.id) return;
       var dx = e.clientX - pt.x0;
-      if (!pt.moved) { if (Math.abs(dx) < 4) return; pt.moved = true; dragBegin('trail'); }
+      if (!pt.moved) { if (Math.abs(dx) < 4) return; pt.moved = true; }
       trailD.v = reduce ? 0 : trailD.grab + 72 * Math.tanh(dx / 72);   // 底栏自己朝手指方向走：开头跟手，越拉越拉不动，最多 72px
-      dragUpdate(-dx / W);   // 定位逻辑，像拖滚动条：点从左到右是越来越深，往右拖是往深处走，内容反着滑
+      // 定位：点从左到右越来越深，往右是往深处走、往左是往回走；选上一格后要退 12px 才掉下来，不在临界点上抖
+      var mag = Math.abs(dx), sgn = dx < 0 ? -1 : 1, bonus = pt.steps !== 0 && (pt.steps < 0) === (dx < 0) ? 12 : 0;
+      var path = pathOf(current), steps = sgn * Math.floor((mag + bonus) / TRAIL_STEP);
+      steps = Math.max(-(path.length - 1), Math.min(nextOf(current) ? 1 : 0, steps));
+      if (steps !== pt.steps) { pt.steps = steps; pt.target = steps > 0 ? nextOf(current) : path[path.length - 1 + steps]; trailPreview(pt.target); }
     });
     function up(e) {
       if (!pt || e.pointerId !== pt.id) return;
-      var moved = pt.moved; pt = null;
+      var moved = pt.moved, target = pt.target; pt = null;
       trailD.held = false; trailD.anim = true; trail.classList.remove('is-held');
       if (!moved) { if (current === 'home') startLinger(); return; }   // 没动过：随后的 click 会处理（点圆点跳层）
-      if (viaTrail(dragEnd)) { suppressClick = true; setTimeout(function () { suppressClick = false; }, 0); }
+      if (target === current) { trailPreview(current); if (current === 'home') startLinger(); else stopLinger(); return; }   // 没拖够一格：点和标题复原，页面没动过
+      viaTrail(function () { jump(target); });   // 松手才切层，直接跳到选中的那层
+      suppressClick = true; setTimeout(function () { suppressClick = false; }, 0);
     }
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
