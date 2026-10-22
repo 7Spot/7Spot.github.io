@@ -24,9 +24,6 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.95); --lg-rim-lo: rgba(0, 40, 110, 0.16);
   --lg-spec: rgba(255, 255, 255, 0.95); --lg-thick: rgba(0, 30, 90, 0.1);
   --lg-text: var(--fg); --lg-text-shadow: none; --lg-shadow: rgba(10, 132, 255, 0.18);
-  /* 「7Spot.」：蓝玻璃字。玻璃本体直接用主按钮 / app 图标那组 --lg-a/b/c（浅色 alpha 约 0.3、深色约 0.5，作者要和后面两页的蓝一样），--brand-spec 上沿柔光，--brand-rim 描一圈薄边，--brand-drop 影子（按字号走；深色是一圈蓝光） */
-  --brand-spec: rgba(255, 255, 255, 0.55); --brand-rim: rgba(0, 70, 180, 0.22);
-  --brand-drop: drop-shadow(0 0.04em 0.08em rgba(10, 132, 255, 0.12)) drop-shadow(0 0.14em 0.4em rgba(10, 132, 255, 0.28));
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --gutter: 16px;
@@ -76,8 +73,6 @@
     --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
     --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
     --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
-    --brand-spec: rgba(255, 255, 255, 0.5); --brand-rim: rgba(255, 255, 255, 0.28);
-    --brand-drop: drop-shadow(0 0 0.12em rgba(10, 132, 255, 0.3)) drop-shadow(0 0.06em 0.5em rgba(10, 132, 255, 0.45));
     color-scheme: dark;
   }
 }
@@ -96,8 +91,6 @@
   --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
   --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
   --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
-  --brand-spec: rgba(255, 255, 255, 0.5); --brand-rim: rgba(255, 255, 255, 0.28);
-  --brand-drop: drop-shadow(0 0 0.12em rgba(10, 132, 255, 0.3)) drop-shadow(0 0.06em 0.5em rgba(10, 132, 255, 0.45));
   color-scheme: dark;
 }
 
@@ -249,23 +242,11 @@ a, button, img, svg { -webkit-user-drag: none; }
 .zzz span:nth-child(3) { font-size: 22px; }
 
 /* ---------- 第一层文字 ---------- */
-/* 「7Spot.」：球下面的第一行，大字，蓝玻璃（和主按钮、app 图标同一块玻璃：半透明蓝渐变 + 左上柔光 + 一圈薄边 + 蓝影子；连点一起），
-   和「在造梦」连读成一句「7Spot. 在造梦」。字的填充用 background-clip: text 裁出来；影子不能用 text-shadow（会盖在裁出的填充上面），用 filter 的 drop-shadow
-   （作者定的：大字放球上面和球抢中心，放左上角又太远；放球下面、保持大字、改蓝、改玻璃） */
-.brand-h {
-  font-size: var(--brand); line-height: 1.05; letter-spacing: -0.02em;
-  color: transparent;
-  background:
-    linear-gradient(to bottom, var(--brand-spec), rgba(255, 255, 255, 0.12) 38%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0) 88%, rgba(255, 255, 255, 0.16)),   /* 上沿一条柔光、下沿一丝反光，像玻璃的厚度；不用左上的圆光斑（整行字上会糊成一块白） */
-    linear-gradient(135deg, var(--lg-a), var(--lg-b) 55%, var(--lg-c));
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-stroke: 0.6px var(--brand-rim);
-  filter: var(--brand-drop);
-}
-.brand-h .dot {
-  background: linear-gradient(to bottom, var(--brand-spec), rgba(255, 255, 255, 0) 50%), linear-gradient(135deg, var(--lg-a), var(--lg-b) 55%, var(--lg-c));
-  box-shadow: inset 0 0 0 0.6px var(--brand-rim);
-}
+/* 「7Spot.」：球下面的第一行，大字，正文色（浅色黑、深色白），只有末尾的点是蓝的（点睛色，整站唯一的彩色点，也是站名的点）。
+   不描边、不发光、不渐变、不加影子，靠对比和字距撑住。和「在造梦」连读成一句「7Spot. 在造梦」
+   （作者定的：大字放球上面和球抢中心，放左上角又太远；蓝色实心和蓝玻璃都试过，像水晶字，不高级） */
+.brand-h { font-size: var(--brand); line-height: 1.05; letter-spacing: -0.03em; color: var(--fg); }
+.brand-h .dot { background: var(--accent); }
 .status-h { font-size: var(--status); font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
@@ -482,7 +463,7 @@ body.preview .statebar { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer { transition: none; }
 }
-@keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px) var(--brand-drop); } to { opacity: 1; letter-spacing: -0.02em; filter: blur(0) var(--brand-drop); } }   /* 影子在 filter 里，动画里得带着，不然结束后被盖掉 */
+@keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px); } to { opacity: 1; letter-spacing: -0.03em; filter: blur(0); } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes rise { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(12px, -28px); } }
