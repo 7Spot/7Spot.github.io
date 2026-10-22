@@ -168,6 +168,7 @@
     document.body.dataset.level = target;
     settle(target, instant);
     setLinesTarget(target === 'home' ? 0 : 1, instant);
+    if (!trailD.fromTrail) stopLinger();   // 不是从底栏回的首页，底栏照常隐去
     updateNav();
   }
   function hashOf(name) { return name === 'home' ? location.pathname + location.search : '#' + name; }
@@ -197,17 +198,67 @@
     setLevel(nameFromHash());
   });
 
-  // 底部圆点：只画走过的路
-  var trail = document.getElementById('trail');
+  // ---------- 底部圆点：只画走过的路。换层不重建 DOM：多出来的段收起、缺的段长出，标题淡出淡入，整串位置连续 ----------
+  var trail = document.getElementById('trail'), trailDots = document.getElementById('trail-dots'), trailLabel = document.getElementById('trail-label');
+  var trailLive = [], trailDying = [];   // 每段 { name, el, dot, line }：在路上的 / 正在收起的（收完就拿掉）
+  var trailD = { v: 0, vel: 0, lastV: 0, anim: false, held: false, grab: 0, fromTrail: false, lingerTimer: null, dirty: false };
+  var labelSwap = 0;
+  function makeSeg(nm, first) {
+    var el = document.createElement('span');
+    el.className = 'trail-seg is-out' + (first ? ' is-first' : '');
+    el.innerHTML = (first ? '' : '<i class="trail-line"></i>') + '<button class="trail-dot" type="button" data-jump="' + nm + '" aria-label="' + esc(titleOf(nm)) + '"><i></i></button>';
+    return { name: nm, el: el, dot: el.querySelector('.trail-dot'), line: el.querySelector('.trail-line') };
+  }
+  function dropDying(it) { var k = trailDying.indexOf(it); if (k >= 0) trailDying.splice(k, 1); if (it.el.parentNode) it.el.parentNode.removeChild(it.el); }
   function updateNav() {
-    var names = pathOf(current);
-    var html = '<div class="trail-dots">';
-    names.forEach(function (nm, i) {
-      if (i) html += '<i class="trail-line"></i>';
-      html += '<button class="trail-dot' + (nm === current ? ' is-current' : '') + '" type="button" data-jump="' + nm + '" aria-label="' + esc(titleOf(nm)) + '"><i></i></button>';
+    var names = pathOf(current), keep = 0;
+    while (keep < trailLive.length && keep < names.length && trailLive[keep].name === names[keep]) keep++;
+    // 多出来的段收起
+    trailLive.splice(keep).forEach(function (it) {
+      it.el.classList.add('is-out'); it.dot.classList.remove('is-current');
+      trailDying.push(it); it.timer = setTimeout(function () { dropDying(it); }, 650);
     });
-    html += '</div><span class="trail-label">' + esc(titleOf(current)) + '</span>';
-    trail.innerHTML = html;
+    // 缺的段补上：刚收起的同名段直接复活（宽度从当前值反向走回来），否则新建；都排在收起中的段前面
+    for (var j = keep; j < names.length; j++) {
+      var it = null;
+      for (var k = 0; k < trailDying.length; k++) if (trailDying[k].name === names[j]) { it = trailDying.splice(k, 1)[0]; clearTimeout(it.timer); break; }
+      if (!it) it = makeSeg(names[j], j === 0);
+      var ref = trailDying.length ? trailDying[0].el : null;
+      if (it.el.parentNode !== trailDots || it.el.nextSibling !== ref) { trailDots.insertBefore(it.el, ref); void it.el.offsetWidth; }   // 先以收起的状态进 DOM，再展开，才有过渡
+      it.el.classList.remove('is-out');
+      trailLive.push(it);
+    }
+    trailLive.forEach(function (it) { it.dot.classList.toggle('is-current', it.name === current); });
+    var title = titleOf(current);
+    if (trailLabel.textContent !== title) {
+      if (!trailLabel.textContent || reduce) trailLabel.textContent = title;
+      else { var my = ++labelSwap; trailLabel.classList.add('is-swap'); setTimeout(function () { if (my !== labelSwap) return; trailLabel.textContent = titleOf(current); trailLabel.classList.remove('is-swap'); }, 250); }
+    }
+  }
+  // 底栏每帧：拖着时 v 跟手，松手后弹簧回 0。领头的点跟得紧、拖尾的点慢半拍，线按两端的差拉长、拉细
+  function trailTick(dt) {
+    var d = trailD, hs = dt / 1000;
+    if (d.held) { var inst = (d.v - d.lastV) / hs; d.vel = Math.max(-400, Math.min(400, d.vel * 0.5 + inst * 0.5)); }   // 记着手速，松手时带着走
+    else if (d.anim) {
+      var steps = Math.min(8, Math.ceil(dt / 6)), h = hs / steps;
+      for (var i = 0; i < steps; i++) { d.vel += (-196 * d.v - 17.4 * d.vel) * h; d.v += d.vel * h; }   // ω=14 ζ=0.62：回去时稍微过一点
+      if (Math.abs(d.v) < 0.05 && Math.abs(d.vel) < 2) { d.v = 0; d.vel = 0; d.anim = false; }
+    }
+    d.lastV = d.v;
+    var v = d.v;
+    if (v === 0 && !d.dirty) return;
+    d.dirty = v !== 0;
+    var items = trailLive.concat(trailDying), n = items.length, sgn = v < 0 ? -1 : 1;
+    function wAt(i) { var k = n > 1 ? (sgn > 0 ? i / (n - 1) : (n - 1 - i) / (n - 1)) : 1; return 0.65 + 0.35 * k; }   // 朝着拖的方向那头 1，另一头 0.65
+    items.forEach(function (it, i) {
+      var wi = wAt(i);
+      it.dot.style.transform = v ? 'translate3d(' + (v * wi).toFixed(2) + 'px,0,0)' : '';
+      if (it.line) {
+        var wp = wAt(i - 1), st = 1 + v * (wi - wp) / 20;   // 线原长 20px，两端位移之差就是拉长的量
+        it.line.style.transform = v ? 'translate3d(' + (v * wp).toFixed(2) + 'px,0,0) scale(' + st.toFixed(3) + ',' + (1 / Math.sqrt(st)).toFixed(3) + ')' : '';
+      }
+    });
+    trailLabel.style.transform = v ? 'translate3d(' + (v * 0.82).toFixed(2) + 'px,0,0)' : '';
   }
 
   // 右上角的预览按钮平时藏着：网址带 ?preview 或 ?state= 才显示
@@ -232,7 +283,7 @@
     var g = e.target.closest('[data-go]');
     if (g) { e.preventDefault(); go(g.getAttribute('data-go')); return; }
     var j = e.target.closest('[data-jump]');
-    if (j) { jump(j.getAttribute('data-jump')); return; }
+    if (j) { viaTrail(function () { jump(j.getAttribute('data-jump')); }); return; }
     var bk = e.target.closest('[data-back]');
     if (bk) { e.preventDefault(); back(); }
   }, true);
@@ -246,13 +297,14 @@
   // ---------- 滑动：触控板、手指、鼠标按住，三种输入共用一条路；可点的东西上也能滑 ----------
   var drag = null;
   function dragBegin(kind) {
-    var par = levels[current].parent, nxt = nextOf(current);
-    drag = { kind: kind, p: 0, cur: levels[current], par: par ? levels[par] : null, nxt: nxt ? levels[nxt] : null, t0: performance.now(), lastP: 0, lastT: performance.now(), v: 0 };
+    var par = levels[current].parent, nxt = nextOf(current), cx = levels[current].x;   // 从这一层现在的位置接着拖：正在动的时候抓住也不跳
+    drag = { kind: kind, base: cx, p: cx, cur: levels[current], par: par ? levels[par] : null, nxt: nxt ? levels[nxt] : null, t0: performance.now(), lastP: cx, lastT: performance.now(), v: 0 };
     [drag.cur, drag.par, drag.nxt].forEach(function (L) { if (L) L.anim = false; });
     stage.classList.add('is-dragging');
   }
   function dragUpdate(p) {
     if (!drag) return;
+    p += drag.base;
     if (p > 0 && !drag.par) p *= 0.25;
     if (p < 0 && !drag.nxt) p *= 0.25;
     p = Math.max(-1, Math.min(1, p));
@@ -327,6 +379,38 @@
     function abort() { clearTimeout(timer); if (active) { active = false; dragEnd(); } pre = 0; }
     window.addEventListener('blur', abort);
     document.addEventListener('visibilitychange', function () { if (document.hidden) abort(); });
+  })();
+
+  // ---------- 底栏：按住左右拖，走的是和拖内容同一条路（dragBegin / dragUpdate / dragEnd）；整串跟手，线被拉长。从底栏回到首页，底栏留两秒再隐去 ----------
+  function startLinger() { clearTimeout(trailD.lingerTimer); trail.classList.add('is-lingering'); trailD.lingerTimer = setTimeout(function () { trail.classList.remove('is-lingering'); }, 2000); }
+  function stopLinger() { clearTimeout(trailD.lingerTimer); trail.classList.remove('is-lingering'); }
+  function viaTrail(fn) { trailD.fromTrail = true; var r = fn(); trailD.fromTrail = false; if (current === 'home') startLinger(); else stopLinger(); return r; }
+  (function () {
+    var pt = null;
+    trail.addEventListener('pointerdown', function (e) {
+      if (about.target === 1 || e.button !== 0 || pt) return;
+      pt = { id: e.pointerId, x0: e.clientX, moved: false };
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+      clearTimeout(trailD.lingerTimer); trail.classList.add('is-lingering');   // 按着的时候不隐去
+      trailD.anim = false; trailD.held = true; trailD.grab = trailD.v;   // 正在弹回也能抓住，从当前位置接着拖
+      trail.classList.add('is-held');
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!pt || e.pointerId !== pt.id) return;
+      var dx = e.clientX - pt.x0;
+      if (!pt.moved) { if (Math.abs(dx) < 4) return; pt.moved = true; dragBegin('trail'); }
+      trailD.v = reduce ? 0 : trailD.grab + 72 * Math.tanh(dx / 72);   // 开头跟手，越拉越拉不动，最多 72px
+      dragUpdate(dx / W);
+    });
+    function up(e) {
+      if (!pt || e.pointerId !== pt.id) return;
+      var moved = pt.moved; pt = null;
+      trailD.held = false; trailD.anim = true; trail.classList.remove('is-held');
+      if (!moved) { if (current === 'home') startLinger(); return; }   // 没动过：随后的 click 会处理（点圆点跳层）
+      if (viaTrail(dragEnd)) { suppressClick = true; setTimeout(function () { suppressClick = false; }, 0); }
+    }
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   })();
 
   // 层内滚动、窗口变化、字体加载：重新量位置
@@ -449,13 +533,19 @@
   var aboutNodes = nodes.filter(function (n) { return n.about; });
   var about = { target: 0, p: 0, from: 0, to: 0, t0: 0, dur: 0, anim: false, shown: false, pendingBurst: false, needMeasure: false, lp: 0, veilV: 0, blurV: 0, lastT: 0 };
   var OPEN_T = 1300, CLOSE_T = 700;
+  function ballScale(n) { return n.f && n.f._d ? n.f._d.s : 1; }
   function aboutMeasure() {
     aboutNodes.forEach(function (n) {
-      var r = n.el.getBoundingClientRect(), o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 };
-      n.base = { l: r.left - o.x - bo.x, t: r.top - o.y - bo.y, w: r.width, h: r.height };
+      var r = n.el.getBoundingClientRect(), o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 }, s = ballScale(n);
+      var w = r.width / s, h = r.height / s;   // 量的时候球可能正缩着，除回去
+      n.base = { l: r.left - o.x - bo.x - (w - r.width) / 2, t: r.top - o.y - bo.y - (h - r.height) / 2, w: w, h: h };
     });
   }
-  function rectAbout(n) { var o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 }; return { l: n.base.l + o.x + bo.x, t: n.base.t + o.y + bo.y, w: n.base.w, h: n.base.h }; }
+  function rectAbout(n) {
+    var o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 }, s = ballScale(n);
+    var w = n.base.w * s, h = n.base.h * s;   // 缩放以球心为中心，线的端点落在缩放后的边上
+    return { l: n.base.l + o.x + bo.x + (n.base.w - w) / 2, t: n.base.t + o.y + bo.y + (n.base.h - h) / 2, w: w, h: h };
+  }
   function makeSparks() {
     sparksEl.innerHTML = '';
     if (reduce) return;
@@ -486,7 +576,7 @@
       aboutPage.classList.add('is-open'); aboutPage.setAttribute('aria-hidden', 'false');
       document.body.classList.add('about-open');
       aboutNodes.forEach(function (n) { if (n.burst) { n.burst.style.transform = ''; n.burst.style.opacity = '0'; n.burst._o = { x: 0, y: 0 }; } });
-      resetCredit();
+      resetCredit(); resetBalls();
       makeSparks();
       about.pendingBurst = true;
     }
@@ -499,6 +589,7 @@
       else history.replaceState({ level: current }, '', hashOf(current));
     }
     about.target = 0;
+    releaseBall(false);   // 正拖着球就放手，球自己弹回原位
     stage.removeAttribute('inert');
     aboutVeil.style.pointerEvents = 'none';
     aboutPage.classList.remove('is-settled');
@@ -545,7 +636,7 @@
       if (about.needMeasure) { about.needMeasure = false; aboutMeasure(); measureCredit(); }
     }
     if (!about.anim && about.p <= 0 && about.target === 0 && about.veilV <= 0.002) {
-      about.shown = false;
+      about.shown = false; resetBalls();
       aboutPage.classList.remove('is-open', 'is-bursting'); aboutPage.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('about-open');
       stage.style.transform = '';
@@ -590,8 +681,59 @@
   function flipCredit() { creditState = creditState === 'a' ? 'b' : 'a'; applyCreditSize(true); }
   function resetCredit() { creditState = 'a'; layerA.classList.add('is-on'); layerB.classList.remove('is-on'); if (creditSize) applyCreditSize(false); }
 
+  // ---------- 关于的三个球：能点（按扁再弹回来）、能拖（有限位，松手弹回原位）。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着 ----------
+  var ballPt = null, ballFloats = [];
+  function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, hold: false }; }
+  function resetBalls() { ballFloats.forEach(function (f) { f._d = freshSpring(); }); }
+  aboutNodes.forEach(function (n) { if (n.f && n.el.classList.contains('bubble-about')) { n.f._d = freshSpring(); ballFloats.push(n.f); } });
+  function spring(d, k, vk, target, w, z, h) { d[vk] += (-w * w * (d[k] - target) - 2 * z * w * d[vk]) * h; d[k] += d[vk] * h; }
+  function ballStep(d, dt) {
+    if (reduce) { d.x = d.tx; d.y = d.ty; d.s = d.ts; d.vx = d.vy = d.vs = 0; return; }
+    var steps = Math.min(8, Math.ceil(dt / 6)), h = dt / steps / 1000;   // 小步积分，帧再长也不会抖
+    var w = d.hold ? 30 : 10, z = d.hold ? 0.85 : 0.55;   // 拖着：硬弹簧紧跟手；松手：软一点，回去时略过冲
+    for (var i = 0; i < steps; i++) {
+      spring(d, 'x', 'vx', d.tx, w, z, h);
+      spring(d, 'y', 'vy', d.ty, w, z, h);
+      spring(d, 's', 'vs', d.ts, 22, 0.32, h);   // 缩放：阻尼小，弹几下，果冻感
+    }
+    if (!d.hold && Math.abs(d.x) < 0.02 && Math.abs(d.y) < 0.02 && Math.abs(d.vx) < 0.3 && Math.abs(d.vy) < 0.3) { d.x = d.y = 0; d.vx = d.vy = 0; }
+    if (Math.abs(d.s - d.ts) < 0.0004 && Math.abs(d.vs) < 0.004) { d.s = d.ts; d.vs = 0; }
+  }
+  function releaseBall(tap) {
+    if (!ballPt) return;
+    var d = ballPt.n.f._d;
+    ballPt.n.el.classList.remove('is-held');
+    d.hold = false; d.tx = 0; d.ty = 0; d.ts = 1;
+    if (tap) d.vs -= 1.6;   // 点一下：再往下按一点，弹回来就是 duang
+    ballPt = null;
+  }
+  aboutNodes.forEach(function (n) {
+    if (!n.f || !n.f._d) return;
+    n.el.addEventListener('pointerdown', function (e) {
+      if (about.target !== 1 || e.button !== 0 || ballPt) return;
+      var d = n.f._d;
+      ballPt = { id: e.pointerId, n: n, x0: e.clientX, y0: e.clientY, gx: d.x, gy: d.y, moved: false };   // 从它现在的位置接着拖，正在弹也不跳
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+      d.hold = true; d.ts = 0.96;   // 按下去：先轻轻按扁
+      n.el.classList.add('is-held');
+    });
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!ballPt || e.pointerId !== ballPt.id) return;
+    var dx = e.clientX - ballPt.x0, dy = e.clientY - ballPt.y0, d = ballPt.n.f._d;
+    if (!ballPt.moved) { if (Math.hypot(dx, dy) < 3) return; ballPt.moved = true; d.ts = 1.04; }   // 开始拖：抬起来一点
+    // 限位：离原位越远越拉不动，最远不超过球直径的 0.45 倍
+    var rx = ballPt.gx + dx, ry = ballPt.gy + dy, len = Math.hypot(rx, ry), max = (ballPt.n.base ? ballPt.n.base.w : 200) * 0.45;
+    var k = len > 0.01 ? max * Math.tanh(len / max) / len : 0;
+    d.tx = rx * k; d.ty = ry * k;
+  });
+  window.addEventListener('pointerup', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(!ballPt.moved); });
+  window.addEventListener('pointercancel', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(false); });
+
   // ---------- 每一帧 ----------
+  var tickLast = 0;
   function tick(t) {
+    var dt = tickLast ? Math.min(48, t - tickLast) : 16; tickLast = t;   // 帧间隔，弹簧用；切回标签页时不让它一口气跳太远
     // 1. 层位移
     levelList.forEach(function (L) {
       if (L.anim) {
@@ -603,9 +745,10 @@
     });
     // 2. 漂浮
     floats.forEach(function (f) {
-      var o = reduce ? { x: 0, y: 0 } : floatOffset(f, t);
+      var o = reduce ? { x: 0, y: 0 } : floatOffset(f, t), d = f._d, sc = '';
+      if (d) { ballStep(d, dt); o.x += d.x; o.y += d.y; if (d.s !== 1) sc = ' scale(' + d.s.toFixed(4) + ')'; }   // 关于的球：加上拖动 / 弹簧的位移和缩放，线用的也是这个 _o
       f._o = o;
-      f.style.transform = 'translate3d(' + o.x.toFixed(2) + 'px,' + o.y.toFixed(2) + 'px,0)';
+      f.style.transform = 'translate3d(' + o.x.toFixed(2) + 'px,' + o.y.toFixed(2) + 'px,0)' + sc;
     });
     if (mouse.has && !reduce) {
       mouse.x += (mouse.tx - mouse.x) * 0.04; mouse.y += (mouse.ty - mouse.y) * 0.04;
@@ -627,8 +770,9 @@
       if (ka >= 1) linesAlpha.v = linesAlpha.to;
     }
     linesG.style.opacity = linesAlpha.v.toFixed(3);
-    // 5. 返回箭头
+    // 5. 返回箭头、底栏
     chevronTick(t);
+    trailTick(dt);
     // 6. 关于
     aboutTick(t);
     var showAbout = about.shown && about.lp > 0;
@@ -646,5 +790,5 @@
   requestAnimationFrame(tick);
 
   // 调试出口：控制台里看各层位置和当前手势
-  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, lines: linesAlpha.v.toFixed(2), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
+  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
 })();

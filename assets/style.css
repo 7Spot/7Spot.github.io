@@ -183,9 +183,11 @@ a, button, img, svg { -webkit-user-drag: none; }
 .bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
 .bubble-home { width: var(--bubble-home); height: var(--bubble-home); }
 .bubble-item { width: var(--bubble-item); height: var(--bubble-item); }
-.bubble-about { width: var(--bubble-about); height: var(--bubble-about); padding: 22px; }
+/* 关于的球：能按能拖（弹簧在脚本里），按住时影子深一点像被拎起来 */
+.bubble-about { width: var(--bubble-about); height: var(--bubble-about); padding: 22px; touch-action: none; cursor: grab; }
+.bubble-about.is-held { cursor: grabbing; box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -12px 28px rgba(0, 0, 0, 0.06), 0 32px 72px var(--glass-shadow); }
 .bubble-text { position: relative; font-size: var(--text-bubble); line-height: 1.45; max-width: 9.5em; color: var(--fg); opacity: 0.85; }
-.bubble-about .bubble-text { font-size: var(--text-about); line-height: 1.7; max-width: 9em; opacity: 0.95; text-wrap: balance; }
+.bubble-about .bubble-text { font-size: var(--text-about); line-height: 1.7; max-width: 9em; opacity: 0.95; text-align: center; text-wrap: balance; }   /* 关于页不在 .level-in 里，居中要自己写 */
 
 .float { position: relative; will-change: transform; }
 .home-float { width: var(--bubble-home); height: var(--bubble-home); margin-bottom: 16px; }
@@ -275,10 +277,9 @@ a, button, img, svg { -webkit-user-drag: none; }
 .cap-primary:hover::before { opacity: 1; }
 .cap-primary:active { transform: scale(0.97); }
 .chev { font-size: 1.25em; line-height: 0.8; margin-left: 2px; }
-.spark-ico { font-size: 0.9em; opacity: 0.8; }
 /* 「关于我」：全站唯一的文字链接。灰字，悬停变成正文色，不加下划线；内边距只为了好点 */
 .about-link {
-  display: inline-flex; align-items: center; gap: 5px; padding: 10px 14px;
+  display: inline-block; padding: 10px 14px;
   font-size: 14px; font-weight: 500; color: var(--muted); line-height: 1; white-space: nowrap;
   transition: color 0.3s var(--ease);
 }
@@ -348,8 +349,6 @@ a, button, img, svg { -webkit-user-drag: none; }
 .credit-a:not(.is-on) { transform: translateY(-8px); }
 .credit-b:not(.is-on) { transform: translateY(8px); }
 @media (max-width: 600px) { .credit { font-size: 12.5px; padding: 9px 14px; } .credit-layer { white-space: normal; } }
-.about-hint { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); color: var(--muted); font-size: 13px; opacity: 0; transition: opacity 0.8s var(--ease); white-space: nowrap; }
-.about-page.is-settled .about-hint { opacity: 1; }
 body.about-open .trail { opacity: 0 !important; pointer-events: none !important; }
 .lines-about-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .lines-about-svg path { fill: none; stroke: var(--link-line); stroke-width: 1.25; stroke-linecap: round; stroke-dasharray: 1; }
@@ -389,21 +388,29 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .back-chevrons:focus-visible { outline: none; }
 .back-chevrons:focus-visible svg { opacity: 1 !important; }
 
-/* ---------- 底部：走过的路（首页不显示） ---------- */
+/* ---------- 底部：走过的路（首页不显示）。能点也能拖：拖的时候整串跟手，领头的点跟得紧、拖尾的点慢半拍，线就被拉长、拉细（位移在脚本里逐帧算） ---------- */
 .trail {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
-  display: grid; justify-items: center; gap: 6px;
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20;
+  display: grid; justify-items: center; gap: 6px; padding: 6px 18px;
+  touch-action: none; cursor: grab;
   transition: opacity 0.6s var(--ease);
 }
-body[data-level="home"] .trail { opacity: 0; pointer-events: none; }
+.trail.is-held { cursor: grabbing; }
+/* 首页不显示；从底栏回到首页时留两秒（.is-lingering）再隐去 */
+body[data-level="home"] .trail:not(.is-lingering) { opacity: 0; pointer-events: none; }
 .trail-dots { display: flex; align-items: center; }
-.trail-dot { position: relative; width: 26px; height: 26px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; }
+/* 每一段 = 线 + 点（第一段只有点）；换层时不重建，旧段收起、新段长出，整串的中心不跳 */
+.trail-seg { display: flex; align-items: center; flex: none; width: 46px; transition: width 0.6s var(--ease-in), opacity 0.35s var(--ease); }
+.trail-seg.is-first { width: 26px; }
+.trail-seg.is-out { width: 0; opacity: 0; pointer-events: none; }
+.trail-dot { position: relative; flex: none; width: 26px; height: 26px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; }
 .trail-dot i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; transition: all 0.5s var(--ease-in); }
 .trail-dot.is-current i { width: 10px; height: 10px; background: var(--fg); border-color: var(--fg); }
 .trail-dot:hover i { border-color: var(--fg); }
 .trail-dot:focus-visible { outline: none; } .trail-dot:focus-visible i { box-shadow: 0 0 0 3px var(--soft); }
-.trail-line { width: 20px; height: 1px; background: var(--link-line); }
-.trail-label { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+.trail-line { flex: none; width: 20px; height: 1px; background: var(--link-line); transform-origin: 0 50%; }
+.trail-label { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
+.trail-label.is-swap { opacity: 0; }
 
 /* ---------- 临时状态按钮 ---------- */
 .statebar {
@@ -436,7 +443,7 @@ body.preview .statebar { display: flex; }
   .bg::after { animation: tint-b 75s ease-in-out infinite alternate; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bubble, .trail, .credit, .credit-layer { transition: none; }
+  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer { transition: none; }
 }
 @keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px); } to { opacity: 1; letter-spacing: -0.02em; filter: blur(0); } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
