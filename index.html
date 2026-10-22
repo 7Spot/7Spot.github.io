@@ -54,16 +54,19 @@
 
   <!-- 第一层：7Spot -->
   <section class="level" data-level="home" data-title="7Spot">
-    <div class="level-in">
+    <!-- 三行：名字贴着球的上沿，球钉在屏幕正中，状态和「关于我」贴着球的下沿 -->
+    <div class="level-in home-grid">
+      <h1 class="brand-h">7Spot<span class="dot" aria-hidden="true"></span></h1>
       <div class="float home-float">
         <div class="zzz" aria-hidden="true"><span>z</span><span>z</span><span>z</span></div>
         <button class="bubble bubble-home" type="button" data-node="home" data-shape="circle" data-go="things"><span class="bubble-text">看看有什么<br>小东西<span class="chev" aria-hidden="true">›</span></span></button>
       </div>
-      <h1 class="brand-h">7Spot<span class="dot" aria-hidden="true"></span></h1>
-      <p class="status-h" id="status-h"></p>
-      <p class="status-p" id="status-p"></p>
-      <div class="actions">
-        <a class="about-link" href="#about" data-go="about" draggable="false">关于我</a>
+      <div class="home-below">
+        <p class="status-h" id="status-h"></p>
+        <p class="status-p" id="status-p"></p>
+        <div class="actions">
+          <a class="about-link" href="#about" data-go="about" draggable="false">关于我</a>
+        </div>
       </div>
     </div>
   </section>

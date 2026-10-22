@@ -95,8 +95,10 @@
         '<span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span>' +
         '<span class="bubble-text">' + esc(it.bubble || it.sub).replace(/\n/g, '<br>') + '</span>' +
       '</button></div>' +
-      '<span class="label">' + esc(it.title) + '</span>' +
-      '<span class="tags"><span class="tag">' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>';
+      '<span class="item-below">' +
+        '<span class="label">' + esc(it.title) + '</span>' +
+        '<span class="tags"><span class="tag">' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>' +
+      '</span>';
     itemsEl.appendChild(w);
   });
 
