@@ -74,6 +74,7 @@
       el.textContent = label;
       el.hidden = !label;
       el.classList.toggle('is-today', days === 0);
+      setPet(it.id, days === 0 ? 'sit' : 'lie');   // 详情卡里的它：今天醒过就坐着吐舌头，其他时候趴着打哈欠
     }
     var awake = S.kind === 'today';
     document.title = awake ? '7Spot' : '7Spot · zzz';
@@ -83,6 +84,17 @@
     var sb = document.querySelectorAll('#statebar button');
     for (var i = 0; i < sb.length; i++) sb[i].classList.toggle('is-on', sb[i].getAttribute('data-state') === key);
     needMeasure = true;
+  }
+
+  // 详情卡里的小东西本人：assets/img/<id>/lie.webp / sit.webp（循环动图）和 lie-still / sit-still（静止一帧，减弱动态效果时用）。
+  // 只加载当前要放的那一个；换姿势时给外层 .pet-stage 加 is-sit，高度跟着换
+  function setPet(id, pose) {
+    var img = document.querySelector('img[data-pet="' + id + '"]');
+    if (!img) return;
+    var src = 'assets/img/' + id + '/' + pose + (reduce ? '-still' : '') + '.webp';
+    if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    var stage = img.closest('.pet-stage');
+    if (stage) stage.classList.toggle('is-sit', pose === 'sit');
   }
 
   // ---------- 小东西气泡：从数据生成 ----------
@@ -443,6 +455,8 @@
     window.addEventListener('pointercancel', up);
   })();
 
+  // 动图到了也量一次（高度是写死的，正常不会动；保险）
+  [].forEach.call(document.querySelectorAll('img[data-pet]'), function (im) { im.addEventListener('load', function () { needMeasure = true; }); });
   // 层内滚动、窗口变化、字体加载：重新量位置
   levelList.forEach(function (L) { L.el.addEventListener('scroll', function () { needMeasure = true; }, { passive: true }); });
   window.addEventListener('resize', function () { W = stage.clientWidth || window.innerWidth; H = window.innerHeight; needMeasure = true; about.needMeasure = true; fitMask(); });

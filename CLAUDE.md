@@ -46,6 +46,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 加一样小东西
 1. `assets/site-data.js` 的 `items` 加一条（id、no、title、sub、bubble 气泡内换行文案、kind 如「Mac 应用」、status）。气泡（图标 + 文案）自动生成在 things 层。
 2. `index.html` 加一个 `section.level data-level="<id>" data-parent="things" data-parent-node='[data-node="item:<id>"]'`，里面放 `.glass.detail[data-node][data-shape="rect"]`。
+3. 可选：详情卡里放它本人的动图。`assets/img/<id>/` 放 `lie.webp`、`sit.webp`（循环动图）和 `lie-still.webp`、`sit-still.webp`（静止一帧），卡里头部和功能列表之间加 `<figure class="pet-stage"><img class="pet" data-pet="<id>" alt=""><i class="pet-shadow"></i></figure>`；`setPet()` 按状态选文件（今天醒过坐着，其他趴着；减弱动态效果用 -still），只加载当前那一个。两种姿势的高度（`--pet-h`）按同一比例尺定，换素材要重算。
+
+## 同桌的素材怎么出
+- 出图脚本在上级目录 `../tools/render_pet.py`（复用小组件自带的离屏渲染，不改小组件的文件夹；那个文件夹只读）。在输出目录里跑：
+  `PYTHONDONTWRITEBYTECODE=1 <小组件>/.venv.nosync/bin/python -B ../tools/render_pet.py <小组件> <输出目录> --scale 2 --seq Lie_belly_loop_1,Lie_belly_loop_2 --fps 15 --fade 0.3 --name lie`（坐着：`--seq Sitting_loop_1,Sitting_loop_2 --name sit`；单张：不带 --seq，`--sheet` 出总览图）。透明背景、无文字、无影子，所有帧共用一个裁剪框。
+- 合成：`img2webp -loop 0 -lossy -q 80 -m 6 -d 67 seq_lie/f*.png -o lie.webp`；静止帧：`cwebp -q 85 seq_lie/f0000.png -o lie-still.webp`（Homebrew 的 webp）。现在的文件：趴着 98 帧 6.5s 565KB，坐着 73 帧 4.9s 509KB，都是 2 倍图。
+- 只放渲染图，模型文件（glb / blend / 贴图）不进仓库。睡觉的片段（Lie_belly_sleep 等）有穿模，作者不要。
 
 ## 命令
 - 预览：双击 index.html。调试参数 `?preview`（显示右上角状态按钮）、`?state=today|ago3|dreaming|never`、`?theme=dark|light`，可与 hash 连用。
@@ -58,7 +65,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `assets/site-data.js` 内容数据：小东西、起床记录、天数阈值
 - `assets/style.css` 全部样式，变量在 :root
 - `assets/motion.js` 状态、推层、连线、漂浮、光点
-- `assets/img/` 帧序列、截图、视频（待加）
+- `assets/img/deskmate/` 同桌的动图（lie / sit 及 -still）
 - `PLAN.md` 计划与已定事项
 
 ## Git
@@ -70,4 +77,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 状态
 - main = dev：v11（2026-10-22 发布）：v10（分层推进、连线常贴、关于炸开页、蓝色 Liquid Glass app 图标、三个向左的返回箭头、按下松手即点击、预览按钮默认隐藏、底栏能拖、返回箭头不瞬移、禁双击放大）之上：首页去掉胶囊，入口是球（球里写「看看有什么小东西 ›」，呼吸由弹簧做）；球放到中线上、整组重心居中，「7Spot.」是球下面的正文色大字 + 蓝点，「关于我」小字；小东西层的球同一条线；「没去过的地方不提示」（底栏按去过的路画、线和前滑只通向去过的层）；底栏拖时页面不动、松手才切、形变最多 16px；关于球只整体缩放（果冻变形撤回）、文字居中、能点能拖；去掉关于页底部提示。图标仍是爪印占位。
-- 待做：素材（帧序列、录屏）；真图标；小东西多了之后 things 层的多气泡排布；Safari / iPhone 手势实测。
+- dev 比 main 多（未发布）：同桌详情卡里放了它本人的动图（趴着打哈欠 / 今天醒过坐着），减弱动态效果放静止帧。
+- 待做：素材（桌面录屏）；真图标；小东西多了之后 things 层的多气泡排布；Safari / iPhone 手势实测。
