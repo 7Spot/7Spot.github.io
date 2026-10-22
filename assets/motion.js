@@ -492,7 +492,12 @@
   function center(r) { return { x: r.l + r.w / 2, y: r.t + r.h / 2 }; }
   function edge(r, shape, to) {
     var c = center(r), dx = to.x - c.x, dy = to.y - c.y, len = Math.hypot(dx, dy) || 1, k;
-    if (shape === 'circle') k = Math.min(r.w, r.h) / 2 / len;
+    if (r.ell) {   // 果冻变形中的球：按椭圆算边，方向先转到椭圆自己的坐标里
+      var e = r.ell, ca = Math.cos(e.ang), sa = Math.sin(e.ang), ux = dx / len, uy = dy / len;
+      var lx = ux * ca + uy * sa, ly = uy * ca - ux * sa;
+      k = 1 / Math.sqrt(lx * lx / (e.a * e.a) + ly * ly / (e.b * e.b)) / len;
+    }
+    else if (shape === 'circle') k = Math.min(r.w, r.h) / 2 / len;
     else k = Math.min(r.w / 2 / (Math.abs(dx) || 1e-6), r.h / 2 / (Math.abs(dy) || 1e-6));
     k = Math.min(k, 1);
     return { x: c.x + dx * k, y: c.y + dy * k };
@@ -569,8 +574,8 @@
   }
   function rectAbout(n) {
     var o = n.f ? n.f._o : { x: 0, y: 0 }, bo = n.burst && n.burst._o ? n.burst._o : { x: 0, y: 0 }, s = ballScale(n);
-    var w = n.base.w * s, h = n.base.h * s;   // 缩放以球心为中心，线的端点落在缩放后的边上
-    return { l: n.base.l + o.x + bo.x + (n.base.w - w) / 2, t: n.base.t + o.y + bo.y + (n.base.h - h) / 2, w: w, h: h };
+    var w = n.base.w * s, h = n.base.h * s, d = n.f && n.f._d, ax = d ? ballAxes(d) : null;   // 缩放以球心为中心，线的端点落在变形后的边上
+    return { l: n.base.l + o.x + bo.x + (n.base.w - w) / 2, t: n.base.t + o.y + bo.y + (n.base.h - h) / 2, w: w, h: h, ell: ax ? { a: n.base.w / 2 * ax.a, b: n.base.w / 2 * ax.b, ang: d.ang } : null };
   }
   function makeSparks() {
     sparksEl.innerHTML = '';
@@ -709,28 +714,46 @@
 
   // ---------- 关于的三个球：能点（按扁再弹回来）、能拖（有限位，松手弹回原位）。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着 ----------
   var ballPt = null, ballFloats = [];
-  function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, hold: false }; }
+  function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, q: 1, vq: 0, ang: 0, hold: false }; }   // q：沿 ang 方向的拉长量（1 = 正圆）
   function resetBalls() { ballFloats.forEach(function (f) { f._d = freshSpring(); }); }
-  aboutNodes.forEach(function (n) { if (n.f && n.el.classList.contains('bubble-about')) { n.f._d = freshSpring(); ballFloats.push(n.f); } });
+  aboutNodes.forEach(function (n) { if (n.f && n.el.classList.contains('bubble-about')) { n.f._d = freshSpring(); n.f._txt = n.el.querySelector('.bubble-text'); ballFloats.push(n.f); } });
   function spring(d, k, vk, target, w, z, h) { d[vk] += (-w * w * (d[k] - target) - 2 * z * w * d[vk]) * h; d[k] += d[vk] * h; }
   function ballStep(d, dt) {
-    if (reduce) { d.x = d.tx; d.y = d.ty; d.s = d.ts; d.vx = d.vy = d.vs = 0; return; }
+    if (reduce) { d.x = d.tx; d.y = d.ty; d.s = d.ts; d.q = 1; d.vx = d.vy = d.vs = d.vq = 0; return; }
     var steps = Math.min(8, Math.ceil(dt / 6)), h = dt / steps / 1000;   // 小步积分，帧再长也不会抖
     var w = d.hold ? 30 : 10, z = d.hold ? 0.85 : 0.55;   // 拖着：硬弹簧紧跟手；松手：软一点，回去时略过冲
+    // 果冻：动得快就顺着动的方向拉长、垂直方向压扁，停下来回圆，回的时候晃几下。轴跟着速度方向转（椭圆转 180° 长一样，所以差值收到 ±90° 以内）
+    var sp = Math.hypot(d.vx, d.vy);
+    if (sp > 30) { var df = Math.atan2(d.vy, d.vx) - d.ang; df -= Math.PI * Math.round(df / Math.PI); d.ang += df * Math.min(1, dt / 80); }
+    var tq = 1 + Math.min(0.3, sp / 2500);
     for (var i = 0; i < steps; i++) {
       spring(d, 'x', 'vx', d.tx, w, z, h);
       spring(d, 'y', 'vy', d.ty, w, z, h);
-      spring(d, 's', 'vs', d.ts, 22, 0.32, h);   // 缩放：阻尼小，弹几下，果冻感
+      spring(d, 's', 'vs', d.ts, 22, 0.32, h);   // 整体缩放：按下去缩一点，松手弹回
+      spring(d, 'q', 'vq', tq, 18, 0.4, h);      // 拉长量：阻尼小，回圆时晃几下
     }
     if (!d.hold && Math.abs(d.x) < 0.02 && Math.abs(d.y) < 0.02 && Math.abs(d.vx) < 0.3 && Math.abs(d.vy) < 0.3) { d.x = d.y = 0; d.vx = d.vy = 0; }
     if (Math.abs(d.s - d.ts) < 0.0004 && Math.abs(d.vs) < 0.004) { d.s = d.ts; d.vs = 0; }
+    if (tq === 1 && Math.abs(d.q - 1) < 0.0005 && Math.abs(d.vq) < 0.005) { d.q = 1; d.vq = 0; }
+  }
+  // 沿轴 / 垂直轴的缩放：拉长的同时另一个方向压扁，面积大致不变
+  function ballAxes(d) { return { a: d.s * d.q, b: d.s / Math.pow(d.q, 0.8) }; }
+  function ballTransform(d) {
+    var ax = ballAxes(d);
+    if (Math.abs(ax.a - 1) < 0.0005 && Math.abs(ax.b - 1) < 0.0005) return '';
+    return ' rotate(' + d.ang.toFixed(4) + 'rad) scale(' + ax.a.toFixed(4) + ',' + ax.b.toFixed(4) + ') rotate(' + (-d.ang).toFixed(4) + 'rad)';   // 转到轴上拉、再转回来
+  }
+  // 字不跟着壳一起压扁拉长（斜着拉会把字拉歪）：给字反向套一次，只留整体缩放。字在球心，所以反向套完位置不动
+  function ballTextTransform(d) {
+    if (Math.abs(d.q - 1) < 0.0005) return '';
+    return 'rotate(' + d.ang.toFixed(4) + 'rad) scale(' + (1 / d.q).toFixed(4) + ',' + Math.pow(d.q, 0.8).toFixed(4) + ') rotate(' + (-d.ang).toFixed(4) + 'rad)';
   }
   function releaseBall(tap) {
     if (!ballPt) return;
     var d = ballPt.n.f._d;
     ballPt.n.el.classList.remove('is-held');
     d.hold = false; d.tx = 0; d.ty = 0; d.ts = 1;
-    if (tap) d.vs -= 1.6;   // 点一下：再往下按一点，弹回来就是 duang
+    if (tap) { d.vs -= 1.6; d.ang = Math.PI / 2; d.vq -= 2.2; }   // 点一下：整体再按一下，并从上往下压扁，弹回来就是 duang
     ballPt = null;
   }
   aboutNodes.forEach(function (n) {
@@ -740,7 +763,7 @@
       var d = n.f._d;
       ballPt = { id: e.pointerId, n: n, x0: e.clientX, y0: e.clientY, gx: d.x, gy: d.y, moved: false };   // 从它现在的位置接着拖，正在弹也不跳
       try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-      d.hold = true; d.ts = 0.96;   // 按下去：先轻轻按扁
+      d.hold = true; d.ts = 0.96; d.ang = Math.PI / 2; d.vq -= 1.2;   // 按下去：缩一点，并从上往下轻轻压扁
       n.el.classList.add('is-held');
     });
   });
@@ -772,7 +795,7 @@
     // 2. 漂浮
     floats.forEach(function (f) {
       var o = reduce ? { x: 0, y: 0 } : floatOffset(f, t), d = f._d, sc = '';
-      if (d) { ballStep(d, dt); o.x += d.x; o.y += d.y; if (d.s !== 1) sc = ' scale(' + d.s.toFixed(4) + ')'; }   // 关于的球：加上拖动 / 弹簧的位移和缩放，线用的也是这个 _o
+      if (d) { ballStep(d, dt); o.x += d.x; o.y += d.y; sc = ballTransform(d); if (f._txt) f._txt.style.transform = ballTextTransform(d); }   // 关于的球：加上拖动 / 弹簧的位移和果冻变形，线用的也是这个 _o；字反向套一次保持端正
       f._o = o;
       f.style.transform = 'translate3d(' + o.x.toFixed(2) + 'px,' + o.y.toFixed(2) + 'px,0)' + sc;
     });
