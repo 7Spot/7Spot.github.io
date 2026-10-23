@@ -328,7 +328,7 @@
       if (sb && os.el.contains(sb)) {
         e.preventDefault();
         if (sb.hasAttribute('data-sheet-close')) os.close();
-        else if (sb.hasAttribute('data-get-download')) downloadGet();
+        else if (sb.hasAttribute('data-get-download')) downloadGet(sb.getAttribute('data-get-download') === 'force');
         else if (sb.hasAttribute('data-sheet-switch')) { var to = sheets.filter(function (x) { return x.el.id === sb.getAttribute('data-sheet-switch'); })[0]; if (to) switchSheet(os, to, sb); }
         else os.stepTo(+sb.getAttribute('data-sheet-step'));
       }
@@ -903,17 +903,64 @@
   function modal() { return about.target === 1 || !!openSheet(); }   // 关于或弹窗开着：背后不能滑、不能点
   // 数据里没有下载的小东西，「获取」变灰、点不了
   [].forEach.call(document.querySelectorAll('[data-get]'), function (b) { var it = itemById(b.getAttribute('data-get')); if (!it || !it.download) { b.disabled = true; b.classList.add('is-off'); } });
+  // ---------- 下载前的设备判断（为什么这么判断、各浏览器能判断到哪一步、以后加 Windows 怎么改，见 CLAUDE.md「下载前的设备判断」）----------
+  // device.os：mac / windows / ios（iPhone、iPad）/ android / chromeos / linux / other；device.chip：arm（M 芯片）/ x86（Intel）/ null（不知道）
+  var device = { os: 'other', chip: null, chipAsked: false };
+  (function () {
+    var ua = navigator.userAgent, uad = navigator.userAgentData;
+    // 1. iPhone / iPad：只有 iOS 上的 WebKit 认 -webkit-touch-callout（所有 iOS 浏览器都是 WebKit）。
+    //    不看触屏：iPad 的 Safari 会把自己报成 Mac，而以后可能有触屏 Mac；Mac 上的 Safari 和 Chrome 都不认这个（2026-10-23 实测）
+    if (window.CSS && CSS.supports && CSS.supports('-webkit-touch-callout', 'none')) { device.os = 'ios'; return; }
+    // 2. 系统：Chrome 内核的浏览器直接报（userAgentData.platform：macOS / Windows / Android / Chrome OS / Linux），别的浏览器看 navigator.platform（MacIntel / Win32 / Linux…）
+    var p = (uad && uad.platform) || navigator.platform || '';
+    if (/mac/i.test(p)) device.os = 'mac';
+    else if (/win/i.test(p)) device.os = 'windows';
+    else if (/android/i.test(p) || /Android/.test(ua)) device.os = 'android';
+    else if (/cros|chrome os/i.test(p) || /CrOS/.test(ua)) device.os = 'chromeos';
+    else if (/linux/i.test(p)) device.os = 'linux';
+    // 3. 芯片只在 Mac 上要：Chrome 内核的浏览器问 architecture（arm = M 芯片，x86 = Intel；页面一打开就问，点下载时早就有了）
+    if (device.os === 'mac' && uad && uad.getHighEntropyValues) {
+      device.chipAsked = true;
+      uad.getHighEntropyValues(['architecture']).then(function (v) { if (v.architecture) device.chip = /arm/i.test(v.architecture) ? 'arm' : 'x86'; }).catch(function () {});
+    }
+  })();
+  // Firefox 不报芯片：看显卡名字（Firefox 报的是简化过的名字，如「Apple M1, or similar」/「Intel(R) Iris(TM) Plus Graphics, or similar」）。
+  // 有 Apple 就是 M 芯片（新款可能只写 Apple GPU，不一定带 M，所以不只认「Apple M」）；有 Intel / AMD / Radeon / NVIDIA 才算 Intel 芯片的 Mac；
+  // 别的、读不到都算不知道。Safari 连显卡名字也藏了（只说 Apple GPU，Intel Mac 上也一样），所以 Safari 的芯片一律不知道、不拦
+  function deviceChip() {
+    if (device.chip || device.chipAsked || device.os !== 'mac' || !/Firefox\//.test(navigator.userAgent)) return device.chip;
+    device.chipAsked = true;
+    try {
+      var gl = document.createElement('canvas').getContext('webgl'), ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+      var r = gl ? String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '') : '';
+      if (/Apple/i.test(r)) device.chip = 'arm';
+      else if (/Intel|AMD|Radeon|NVIDIA|GeForce/i.test(r)) device.chip = 'x86';
+    } catch (err) {}
+    return device.chip;
+  }
+  // 这个包能不能在这台设备上用：能就返回空；不能就返回提醒的标题。不知道的一律当能用（宁可放过，不错拦）
+  function deviceMismatch(dl) {
+    if (dl.os === 'mac') {
+      if (device.os !== 'mac') return '此应用只支持 Mac';
+      if (dl.chip === 'arm' && deviceChip() === 'x86') return '此应用只支持 M 芯片的 Mac';
+    }
+    return '';
+  }
   function openGet(id, btn) {
     var it = itemById(id);
     if (openSheet() || !it || !it.download) return;
     getItem = it;
     document.getElementById('get-title').textContent = '获取' + it.title;
     document.getElementById('get-req').textContent = it.download.req + ' · ' + it.download.size;
+    document.getElementById('get-warn-req').textContent = it.download.req;
     getSheet.open(btn);
   }
   // 确定下载：直接下载 GitHub 发行版里的包（服务器让浏览器存成文件，人还留在网站上），换到第三步「开始下载了」：左边「安装教程」，右边「完成」
-  function downloadGet() {
+  // force：在「此应用只支持 Mac」那一步点了「仍要下载」，不再判断设备
+  function downloadGet(force) {
     if (!getItem || !getItem.download) return;
+    var why = force ? '' : deviceMismatch(getItem.download);
+    if (why) { document.getElementById('get-warn').textContent = why; getSheet.stepTo(4); return; }   // 设备对不上：先提醒，「仍要下载」照常下，「取消」收回
     var a = document.createElement('a'); a.href = getItem.download.url; a.rel = 'noopener'; a.setAttribute('data-dl', '');
     getSheet.panel.appendChild(a); a.click(); a.remove();
     getSheet.stepTo(3);
@@ -1047,5 +1094,5 @@
   requestAnimationFrame(tick);
 
   // 调试出口：控制台里看各层位置和当前手势
-  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: getSheet.target, step: getSheet.step, shown: getSheet.shown }, tut: { target: tutSheet.target, step: tutSheet.step, shown: tutSheet.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
+  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: getSheet.target, step: getSheet.step, shown: getSheet.shown }, device: { os: device.os, chip: device.chip }, tut: { target: tutSheet.target, step: tutSheet.step, shown: tutSheet.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
 })();

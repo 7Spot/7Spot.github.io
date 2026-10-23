@@ -43,7 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 关于的三个球能点能拖（不跳转）：按下轻轻按扁（0.96），开始拖抬起一点（1.04），拖着时硬弹簧紧跟手（ω 30、ζ 0.85），松手软弹簧回原位、略过冲（ω 10、ζ 0.55）；点一下（没拖动）给缩放一个向下的冲量，弹回来就是 duang（缩放弹簧 ω 22、ζ 0.32）。限位：离原位 tanh 软限，最远球直径的 0.45 倍。状态在 `float._d`，每帧 `ballStep()` 小步积分（帧长超过 6ms 就拆步）；位移加进 `f._o`、缩放进 `rectAbout()` / `aboutMeasure()`，所以线始终贴着。只整体缩放，不压扁。首页的球也用同一套弹簧（`homeFloat._d`）：按下缩到 0.96、松手弹回，呼吸（±1.25%，8s 一轮）由弹簧目标做，不用 CSS 动画；`measureAll` / `rectNow` 会把缩放除回去 / 带上。正在弹的时候抓住就从当前位置接着拖，不跳；关闭时 `releaseBall()`，完全关上 `resetBalls()`。
 - 落款胶囊 `#credit`：两层文字 `.credit-a`「作者是我和几个 AI，它们说它们不做梦，我不信」/ `.credit-b`「开发伙伴：」+ `site-data.js` 的 `credits` 用 · 连接（现为 JUN7 · Claude Fable 5.1 · Claude Opus 5.5 · ChatGPT GPT-6，同一家的排在一起）。每个名字包在 `.credit-name` 里整个不拆（作者要「名字说完再换行」），手机上只在 · 处折、两行尽量等长（text-wrap: balance）；`fitLines()` 在 measureCredit 里把折了行的那层宽度收到最长一行，胶囊贴着字。`measureCredit()` 在关于打开的第一帧量两种状态的尺寸，`flipCredit()` 切类名并把宽高设成目标尺寸，CSS 过渡（宽高 0.5s push 曲线，文字交叉淡入淡出 + 轻微位移 + 模糊），中途再点自然反向。网格轨道用 minmax(0,1fr)，不然隐藏层会把轨道撑宽导致文字被裁。每次重开关于 `resetCredit()` 回到第一句。换模型只改 `credits`。（宽高过渡用的 `--push` 曲线 2026-10-23 之前没定义，宽高其实是跳变的，现在补上了。）
 - 弹窗 `.sheet`（2026-10-23）：获取和安装教程共用一套（`makeSheet(id)` 返回 open / close / stepTo / fit），一块 Liquid Glass `.sheet-panel`：中性玻璃色 `--sheet-*`，Chrome 用 `#lg-refract` 边缘折射，Safari `.no-refract` 退回毛玻璃；左上高光、渐变亮边、底部厚度。几步在同一块玻璃里变形：`stepTo(n)` 只让当前这步 is-on（其余 inert），玻璃高度过渡到这一步（0.5s `--push`），字交叉淡入淡出 + 轻轻上移（不带模糊）。打开 / 收回是 CSS 过渡（加 / 去 `.is-shown`；开 460ms iOS 曲线、收 320ms 先缩后淡，中途切换浏览器自己从当前样子反向）：玻璃从点开它的按钮中心（`--ox` / `--oy`，开和收各量一次，卡片在漂）缩放 0.3→1 长到屏幕中心，只动 transform 和 opacity；遮罩 `.sheet-veil` 的模糊固定 8px，只淡入淡出。**为什么不用脚本逐帧画**（2026-10-23 作者觉得卡）：Safari（WebKit）的页面渲染只有 60 帧（用 `../tools/webkit_frames.swift` 实测帧间隔中位 17ms，屏幕 120Hz），脚本画的动画在 Safari 里就是 60 帧；CSS 的 transform / opacity 过渡交给系统合成。逐帧改模糊半径在 Safari 里还可能要重画，也别这么做。推层、连线、关于页为了线贴球必须脚本画，在 Safari 里仍是 60 帧。开着时 `.stage` inert，`modal()`（关于或任一弹窗开着）挡住滑动、底栏和键盘翻层；取消、点空白、Esc、浏览器返回都会收回。文案换行是手动 `<br>`（中文孤字换行浏览器管不好），说明文字不带句号（作者要的）。
-- 获取 `#get-sheet`：同桌详情卡的「获取」（`.cap-primary.get-btn`，`data-get="<id>"`；原来旁边的「Mac 应用」胶囊去掉了）。三步：① 获取<名字> +「正式版本还在造梦，现在可以先试开发者版本」+ 取消 / 获取开发者版本 ② 开发者版本说明（两行：「包含仍在开发中的功能 / 部分功能可能在后续版本中调整或移除」，作者要专业一点）+ 要求和大小（site-data 的 `download.req` / `size`）+ 取消 / 确定下载 ③ 开始下载了 +「第一次打开会显示：」+ 灰色引用系统原话「Apple 无法验证是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」（作者给的句子，按系统原文补了「的」）+ 安装教程 / 完成。确定下载：建一个带 `data-dl` 的链接点一下（GitHub 返回附件，人留在网站上），换到第三步。完整的安装说明不放在获取里（作者说：放这里得一路点到开始下载才看得见），第三步的「安装教程」直接切过去：`switchSheet(from, to, btn)` 让获取那块玻璃原地淡出（`.is-leaving`）、教程从这颗按钮长出来，背后遮罩接着用不闪（`.veil-now`，实测两块合起来每帧都是 1），教程收回时回到详情卡上的「安装教程」按钮（`open(btn, back)`）。数据里没有 `download` 的小东西，「获取」变灰（`.is-off`）。
+- 获取 `#get-sheet`：同桌详情卡的「获取」（`.cap-primary.get-btn`，`data-get="<id>"`；原来旁边的「Mac 应用」胶囊去掉了）。三步：① 获取<名字> +「正式版本还在造梦，现在可以先试开发者版本」+ 取消 / 获取开发者版本 ② 开发者版本说明（两行：「包含仍在开发中的功能 / 部分功能可能在后续版本中调整或移除」，作者要专业一点）+ 要求和大小（site-data 的 `download.req` / `size`）+ 取消 / 确定下载 ③ 开始下载了 +「第一次打开会显示：」+ 灰色引用系统原话「Apple 无法验证是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」（作者给的句子，按系统原文补了「的」）+ 安装教程 / 完成。确定下载：先判断设备（见「下载前的设备判断」），对不上就换到第四步「此应用只支持 Mac」/「此应用只支持 M 芯片的 Mac」+ 要求 + 仍要下载 / 取消；对得上（或判断不了）就建一个带 `data-dl` 的链接点一下（GitHub 返回附件，人留在网站上），换到第三步。完整的安装说明不放在获取里（作者说：放这里得一路点到开始下载才看得见），第三步的「安装教程」直接切过去：`switchSheet(from, to, btn)` 让获取那块玻璃原地淡出（`.is-leaving`）、教程从这颗按钮长出来，背后遮罩接着用不闪（`.veil-now`，实测两块合起来每帧都是 1），教程收回时回到详情卡上的「安装教程」按钮（`open(btn, back)`）。数据里没有 `download` 的小东西，「获取」变灰（`.is-off`）。
 - 安装教程 `#tut-sheet`（`.sheet-wide`，玻璃宽 480px）：「获取」右边的透明玻璃胶囊「安装教程」（`.cap.tut-btn`，`data-tut`）点开，一步一页、右上角「n / 5」，底部上一步 / 下一步，最后一页「好了」，再打开回到第 1 页。五页：解压后拖进「应用程序」，双击打开 / 弹出「未打开」时，先点「完成」｜打开「系统设置」/ 点左边的「隐私与安全」｜往下翻到「安全性」/ 在「已阻止…」那一行点「仍要打开」｜再点一次「仍要打开」｜用触控 ID 或输入开机密码，即可打开（最后一句作者定的）。配图在 `assets/img/deskmate/install/1–5.webp`：作者的系统截图（macOS 27，名字是 ClearPaw Widget.app，和下载到的一致，不改），用 `../tools/cutout.swift` 按圆角抠掉壁纸、四角透明，2 倍图；img 上写 CSS 尺寸（宽高不要再写 auto，不然图没到时玻璃量矮、按钮被裁），太宽缩到玻璃宽、太高 contain；投影在 CSS 统一加。图加载完会再量一次玻璃高度。
 - `#statebar` 右上角四个预览按钮（today / ago3 / dreaming / never）：默认 display none，网址带 `?preview` 或 `?state=` 时给 body 加 `.preview` 才显示。给作者看效果用，线上访客看不到。
 - 三档尺寸：电脑 >1024 / iPad 600–1024 / 手机 <600，尺寸全在 :root 变量里。首页的球和同桌球一样大（200 / 176 / 150），「更多小东西」也一样大。小东西球里的字：`--item-icon` / `--item-name` / `--item-meta`（那句话用 `--text-bubble`）。
@@ -54,6 +54,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. `index.html` 加一个 `section.level data-level="<id>" data-parent="things" data-parent-node='[data-node="item:<id>"]'`，里面放 `.glass.detail[data-node][data-shape="rect"]`。
 3. 可选：能下载了就在 `items` 那条里加 `download: { url, size, req }`，详情卡的「获取」写 `data-get="<id>"`，弹窗自动用它的名字和要求。下载包放 GitHub 发行版（不进仓库）。
 4. 可选：详情卡里放它本人的动图。`assets/img/<id>/` 放 `lie.webp`、`sit.webp`（循环动图）和 `lie-still.webp`、`sit-still.webp`（静止一帧），卡里头部和功能列表之间加 `<figure class="pet-stage"><img class="pet" data-pet="<id>" alt=""><i class="pet-shadow"></i></figure>`；`setPet()` 按状态选文件（今天醒过坐着，其他趴着；减弱动态效果用 -still），只加载当前那一个。两种姿势的高度（`--pet-h`）按同一比例尺定，换素材要重算。
+
+## 下载前的设备判断（2026-10-23）
+点「确定下载」时，拿这个包能用的设备（site-data 里 `download.os` / `download.chip`，现在是 `mac` + `arm`）和访客的设备比：对不上就先提醒（获取弹窗第四步，标题「此应用只支持 Mac」或「此应用只支持 M 芯片的 Mac」），用户可以点「仍要下载」照常下，或「取消」。**判断不了的一律当能用、不提醒**：宁可漏拦，不错拦；就算错拦了，用户也能点「仍要下载」。代码在 `motion.js` 的 `device`、`deviceChip()`、`deviceMismatch()`、`downloadGet(force)`。
+
+判断顺序：
+1. **iPhone / iPad**：`CSS.supports('-webkit-touch-callout', 'none')` 为真。只有 iOS 上的 WebKit 认这个样式（长按弹出系统菜单那个），iOS 上所有浏览器（Safari、Chrome、Firefox、微信、百度 App）底层都是 WebKit，所以都认；Mac 上的 Safari 和 Chrome 都不认（2026-10-23 在作者 Mac 上实测）。
+   - 不要靠触屏判断（`maxTouchPoints`、`ontouchstart`）：iPad 的 Safari 会把自己报成 Mac，以后还可能有触屏 Mac（作者特意说的）。
+   - 不要靠 `navigator.standalone`：它在 Mac 的 WebKit 里也存在（实测），分不出来。
+2. **系统**：Chrome 内核的浏览器有 `navigator.userAgentData.platform`（macOS / Windows / Android / Chrome OS / Linux）；其他浏览器（Safari、Firefox、老的 Chrome 内核）看 `navigator.platform`（MacIntel / Win32 / Linux armv8l…）。Mac 上不论什么芯片都报 MacIntel。`userAgentData` 只在安全环境有：线上是 https，本地 file:// 在 Chrome 里也算（实测）。
+3. **芯片**（只在包要求 M 芯片、并且是 Mac 时才判断）：
+   - Chrome 内核：`userAgentData.getHighEntropyValues(['architecture'])`，arm = M 芯片，x86 = Intel。页面一打开就问（是异步的），点下载时早就有了；还没回来就当不知道。
+   - Firefox：没有芯片接口，看 WebGL 显卡名字（`WEBGL_debug_renderer_info`，没有就用 `RENDERER`）。Firefox 报的是简化过的名字，如「Apple M1, or similar」。名字里有 Apple 就是 M 芯片（新款可能只写 Apple GPU，所以不只认「Apple M」）；有 Intel / AMD / Radeon / NVIDIA / GeForce 才算 Intel 芯片的 Mac；别的、读不到都算不知道。只在点下载时读一次。
+   - Safari：芯片和显卡都藏了（Intel Mac 上也只说 Apple GPU），一律不知道、不拦。
+
+| 浏览器 | 是不是 Mac | 是不是 M 芯片 |
+|---|---|---|
+| Chrome、Edge、Opera、新版 360 / QQ / 百度（Chrome 内核） | 能 | 能 |
+| Firefox | 能 | 看显卡名字，大多能 |
+| Safari | 能 | 不能（放行） |
+| 老版本 Chrome 内核（没有 userAgentData） | 能 | 不能（放行） |
+| 手机、平板上的任何浏览器（含微信、百度 App） | 能（都提醒「此应用只支持 Mac」） | 不需要 |
+
+已知的漏判 / 错判：Intel 芯片的 Mac 用 Safari 或老浏览器会直接下载（拦不到）；在 M 芯片 Mac 上用 Rosetta 跑 Intel 版 Chrome，会报 x86 被错拦（能点「仍要下载」）；改过 UA 的浏览器按它报的算。
+测试：`node ../tools/download_devices.js [截图目录]`，用调试协议模拟 12 种设备 / 浏览器（M 芯片 / Intel 的 Chrome，Windows Edge，安卓百度 App，iPhone，报成 Mac 的 iPad，Safari，Firefox 的几种显卡名字），改了判断规则就跑一遍。
+
+**以后出 Windows 版怎么改**：
+1. 打包、传到 GitHub 发行版（和 Mac 包分开两个文件）。
+2. site-data 里同桌的 `download` 改成一个列表 `downloads: [{ os: 'mac', chip: 'arm', url, size, req }, { os: 'windows', url, size, req }]`。
+3. `motion.js`：`deviceMismatch()` 改成「在列表里找 `os` 和访客一样的那个包」——找到就下那个（第二步的要求、大小跟着换）；一个都对不上才提醒，标题改成「此应用只支持 Mac 和 Windows」之类。Windows 的芯片（x64 / ARM）在 Chrome 内核里同样能用 `getHighEntropyValues(['architecture', 'bitness'])` 问到；Firefox / Safari 在 Windows 上大多只能当不知道。
+4. 安装教程和第三步的文字现在都是 macOS 的（「Apple 无法验证…」、隐私与安全）；Windows 版要换成 Windows 的那一套（比如 SmartScreen「Windows 已保护你的电脑」→ 更多信息 → 仍要运行），按访客的系统显示对应的那一套。
+5. 在 `download_devices.js` 的 CASES 里加 Windows 的期望结果再跑。
 
 ## 同桌的素材怎么出
 - 出图脚本在上级目录 `../tools/render_pet.py`（复用小组件自带的离屏渲染，不改小组件的文件夹；那个文件夹只读）。在输出目录里跑：
@@ -88,5 +119,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 状态
 - main = dev：v12（2026-10-22 发布）：v11（分层推进、连线常贴、关于炸开页、蓝色 Liquid Glass app 图标、三个向左的返回箭头、按下松手即点击、预览按钮默认隐藏、底栏能拖、返回箭头不瞬移、禁双击放大，首页去掉胶囊，入口是球（球里写「看看有什么小东西 ›」，呼吸由弹簧做）；球放到中线上、整组重心居中，「7Spot.」是球下面的正文色大字 + 蓝点，「关于我」小字；小东西层的球同一条线；「没去过的地方不提示」（底栏按去过的路画、线和前滑只通向去过的层）；底栏拖时页面不动、松手才切、形变最多 16px；关于球只整体缩放（果冻变形撤回）、文字居中、能点能拖；去掉关于页底部提示）之上：同桌详情卡里放了它本人的动图（趴着打哈欠 / 今天醒过坐着，60 帧、1.25 倍图、各 1MB 以内），减弱动态效果放静止帧。图标仍是爪印占位。
 - 下载包：GitHub 发行版 `deskmate-dev-0.4.0`（预发布，`Deskmate-dev-0.4.0.zip`），同桌详情卡的「获取」→ 确定下载就是它。**删这个发行版之前，先把 site-data 里同桌的 `download` 去掉并发布**，不然「获取」会下到失效的链接。
-- dev（2026-10-23，未发布，main 仍是 v12）：同桌详情卡「获取」能点了：去掉「Mac 应用」胶囊，点开 Liquid Glass 三步弹窗（获取同桌 → 开发者版本 → 怎么打开），确定下载接 GitHub 发行版、下完弹窗收回；「获取」右边加「安装教程」（五页图文，配图是抠过背景的系统截图），获取第三步「开始下载了」能直接切到教程；补上落款用的 `--push` 曲线；弹窗的打开 / 收回改成 CSS 过渡（Safari 里脚本动画只有 60 帧）。在这之前：触控板滑动重写（认出惯性就判定、松手接着手速走、没有冷却、起步不跳）、直达链接往回滑不再退出网站、连线淡出改成线条渐变；小东西层同桌的字全放进球里，下面加「更多小东西 / 敬请期待」，两颗整组居中；首页以外同桌都带「你的桌面宠物」；开发伙伴加 Claude Opus 5.5（排在 Fable 后面），名字不拆行、胶囊贴字。
+- dev（2026-10-23，未发布，main 仍是 v12）：同桌详情卡「获取」能点了：去掉「Mac 应用」胶囊，点开 Liquid Glass 三步弹窗（获取同桌 → 开发者版本 → 怎么打开），确定下载接 GitHub 发行版、下完弹窗收回；「获取」右边加「安装教程」（五页图文，配图是抠过背景的系统截图），获取第三步「开始下载了」能直接切到教程；点确定下载先判断设备，不是 Mac / Intel 芯片的 Mac 先提醒（仍要下载 / 取消，见「下载前的设备判断」）；补上落款用的 `--push` 曲线；弹窗的打开 / 收回改成 CSS 过渡（Safari 里脚本动画只有 60 帧）。在这之前：触控板滑动重写（认出惯性就判定、松手接着手速走、没有冷却、起步不跳）、直达链接往回滑不再退出网站、连线淡出改成线条渐变；小东西层同桌的字全放进球里，下面加「更多小东西 / 敬请期待」，两颗整组居中；首页以外同桌都带「你的桌面宠物」；开发伙伴加 Claude Opus 5.5（排在 Fable 后面），名字不拆行、胶囊贴字。
 - 待做：素材（桌面录屏）；真图标；小东西多了以后竖着滑（作者 2026-10-23 认可的方向：横着走层级、竖着挑同一层的球，放得下就整组居中、放不下才上下滑，往深处只记最后一次进的；先做 `?things=8` 预览参数塞假球摸手感）；Safari / iPhone 手势实测（Safari 默认把脚本动画限在 60 帧）。

@@ -140,6 +140,12 @@
         <p class="sheet-text">第一次打开会显示：<br><span class="sheet-quote">Apple 无法验证是否包含可能危害 Mac 安全或泄漏隐私的恶意软件</span></p>
         <div class="sheet-actions"><button class="cap" type="button" data-sheet-switch="tut-sheet">安装教程</button><button class="cap cap-primary" type="button" data-sheet-close>完成</button></div>
       </div>
+      <!-- 点「确定下载」时设备不对（不是 Mac / Intel 芯片的 Mac）才会到这一步，标题由脚本按情况填；判断方法见 CLAUDE.md「下载前的设备判断」 -->
+      <div class="sheet-step" data-step="4">
+        <h2 class="sheet-title" id="get-warn">此应用只支持 Mac</h2>
+        <p class="sheet-text" id="get-warn-req"></p>
+        <div class="sheet-actions"><button class="cap" type="button" data-get-download="force">仍要下载</button><button class="cap cap-primary" type="button" data-sheet-close>取消</button></div>
+      </div>
     </div>
   </div>
 </section>
