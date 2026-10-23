@@ -324,11 +324,12 @@
     if (e.target.closest('[data-dl]')) return;   // 「确定下载」自己点的那个下载链接，放行
     var os = openSheet();
     if (os) {   // 弹窗开着或正在开：只认这个弹窗里的按钮和空白处（遮罩也是「关」）
-      var sb = e.target.closest('[data-sheet-close], [data-sheet-step], [data-get-download]');
+      var sb = e.target.closest('[data-sheet-close], [data-sheet-step], [data-get-download], [data-sheet-switch]');
       if (sb && os.el.contains(sb)) {
         e.preventDefault();
         if (sb.hasAttribute('data-sheet-close')) os.close();
         else if (sb.hasAttribute('data-get-download')) downloadGet();
+        else if (sb.hasAttribute('data-sheet-switch')) { var to = sheets.filter(function (x) { return x.el.id === sb.getAttribute('data-sheet-switch'); })[0]; if (to) switchSheet(os, to, sb); }
         else os.stepTo(+sb.getAttribute('data-sheet-step'));
       }
       return;
@@ -849,7 +850,8 @@
       sh.panel.style.setProperty('--ox', (r.left + r.width / 2 - window.innerWidth / 2).toFixed(1) + 'px');
       sh.panel.style.setProperty('--oy', (r.top + r.height / 2 - window.innerHeight / 2).toFixed(1) + 'px');
     };
-    sh.open = function (btn) {
+    // back：收回时回到哪个按钮（不给就回到 btn）。从另一个弹窗切过来时，从弹窗里那颗按钮长出来、收回到页面上的按钮里
+    sh.open = function (btn, back) {
       if (sh.target === 1) return;
       sh.btn = btn; sh.target = 1;
       clearTimeout(sh.hideTimer);
@@ -863,6 +865,7 @@
         void sh.panel.offsetWidth;
       }
       el.classList.add('is-shown');
+      if (back) sh.btn = back;
       try { sh.panel.focus({ preventScroll: true }); } catch (err) {}
     };
     sh.close = function () {
@@ -884,6 +887,18 @@
     return sh;
   }
   var getSheet = makeSheet('get-sheet'), tutSheet = makeSheet('tut-sheet'), sheets = [getSheet, tutSheet], getItem = null;
+  // 从一个弹窗切到另一个（获取第三步的「安装教程」）：旧玻璃原地淡出，新玻璃从点的那颗按钮长出来；背后的遮罩接着用，不闪
+  function switchSheet(from, to, btn) {
+    to.el.classList.add('veil-now');
+    from.el.classList.add('is-leaving');
+    from.target = 0; clearTimeout(from.hideTimer);
+    from.hideTimer = setTimeout(function () {
+      from.shown = false;
+      from.el.classList.remove('is-open', 'is-shown', 'is-leaving'); from.el.setAttribute('aria-hidden', 'true');
+    }, reduce ? 0 : 260);
+    to.open(btn, document.querySelector('[data-tut]') || btn);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { to.el.classList.remove('veil-now'); }); });   // 遮罩到位之后恢复过渡，收回时照常淡出
+  }
   function openSheet() { for (var i = 0; i < sheets.length; i++) if (sheets[i].target === 1) return sheets[i]; return null; }
   function modal() { return about.target === 1 || !!openSheet(); }   // 关于或弹窗开着：背后不能滑、不能点
   // 数据里没有下载的小东西，「获取」变灰、点不了
@@ -896,12 +911,12 @@
     document.getElementById('get-req').textContent = it.download.req + ' · ' + it.download.size;
     getSheet.open(btn);
   }
-  // 确定下载：直接下载 GitHub 发行版里的包（服务器让浏览器存成文件，人还留在网站上），弹窗收回「获取」里；怎么安装在「安装教程」里
+  // 确定下载：直接下载 GitHub 发行版里的包（服务器让浏览器存成文件，人还留在网站上），换到第三步「开始下载了」：左边「安装教程」，右边「完成」
   function downloadGet() {
     if (!getItem || !getItem.download) return;
     var a = document.createElement('a'); a.href = getItem.download.url; a.rel = 'noopener'; a.setAttribute('data-dl', '');
     getSheet.panel.appendChild(a); a.click(); a.remove();
-    getSheet.close();
+    getSheet.stepTo(3);
   }
 
   // ---------- 球的弹簧：关于的三个球能点（缩一下再弹回来）、能拖（有限位，松手弹回原位）；首页的球能点（缩一下）并用它呼吸。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着。只整体缩放，球永远正圆（作者试过压扁拉长，手机上卡且怪，撤回了） ----------
