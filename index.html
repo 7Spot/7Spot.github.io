@@ -87,7 +87,7 @@
             <div class="app-meta">
               <h2>同桌</h2>
               <p class="sub">你的桌面宠物</p>
-              <div class="app-actions"><button class="cap cap-primary get-btn" type="button" data-get="deskmate" draggable="false">获取</button></div>
+              <div class="app-actions"><button class="cap cap-primary get-btn" type="button" data-get="deskmate" draggable="false">获取</button><button class="cap tut-btn" type="button" data-tut="deskmate" draggable="false">安装教程</button></div>
             </div>
           </header>
           <!-- 同桌本人：小组件里真实动画渲染的循环动图。文件由脚本按状态选（趴着打哈欠 / 今天醒过就坐着），减弱动态效果时放静止的一帧 -->
@@ -119,30 +119,60 @@
   </div>
 </section>
 
-<!-- 获取：一块 Liquid Glass，三步在同一块玻璃里变形（获取 → 开发者版本 → 怎么打开）。从「获取」按钮的位置长出来，收回去也回到按钮里 -->
-<section class="get-sheet" id="get-sheet" aria-hidden="true">
-  <div class="get-veil" data-get-close></div>
-  <div class="get-panel" id="get-panel" role="dialog" aria-modal="true" aria-labelledby="get-title" tabindex="-1">
-    <div class="get-steps" id="get-steps">
-      <div class="get-step is-on" data-step="1">
-        <header class="get-head"><span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span><h2 class="get-title" id="get-title">获取</h2></header>
-        <p class="get-text">正式版本还在造梦，现在可以先试开发者版本</p>
-        <div class="get-actions"><button class="cap" type="button" data-get-close>取消</button><button class="cap cap-primary" type="button" data-get-step="2">获取开发者版本</button></div>
+<!-- 弹窗（获取、安装教程）：一块 Liquid Glass，几步在同一块玻璃里变形。从点开它的按钮那里长出来，收回去也回到按钮里 -->
+<section class="sheet" id="get-sheet" aria-hidden="true">
+  <div class="sheet-veil" data-sheet-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="get-title" tabindex="-1">
+    <div class="sheet-steps">
+      <div class="sheet-step is-on" data-step="1">
+        <header class="sheet-head"><span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span><h2 class="sheet-title" id="get-title">获取</h2></header>
+        <p class="sheet-text">正式版本还在造梦，现在可以先试开发者版本</p>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-close>取消</button><button class="cap cap-primary" type="button" data-sheet-step="2">获取开发者版本</button></div>
       </div>
-      <div class="get-step" data-step="2">
-        <h2 class="get-title">开发者版本</h2>
-        <p class="get-text">包含仍在开发中的功能<br>部分功能可能在后续版本中调整或移除</p>
-        <p class="get-note" id="get-req"></p>
-        <div class="get-actions"><button class="cap" type="button" data-get-close>取消</button><button class="cap cap-primary" type="button" data-get-download>确定下载</button></div>
+      <div class="sheet-step" data-step="2">
+        <h2 class="sheet-title">开发者版本</h2>
+        <p class="sheet-text">包含仍在开发中的功能<br>部分功能可能在后续版本中调整或移除</p>
+        <p class="sheet-note" id="get-req"></p>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-close>取消</button><button class="cap cap-primary" type="button" data-get-download>确定下载</button></div>
       </div>
-      <div class="get-step" data-step="3">
-        <h2 class="get-title">开始下载了</h2>
-        <ol class="get-list">
-          <li>在「下载」里找到它<br>（是压缩包就先双击解压）</li>
-          <li>拖进「应用程序」</li>
-          <li>第一次打开会被系统拦住：<br>去「系统设置 → 隐私与安全性」，<br>往下找到它，点「仍要打开」</li>
-        </ol>
-        <div class="get-actions one"><button class="cap cap-primary" type="button" data-get-close>好的</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 安装教程：同一种玻璃，一步一页。第一次打开会被系统拦住，一直讲到「仍要打开」。图是系统弹窗和设置的截图，按圆角抠掉了背景 -->
+<section class="sheet sheet-wide" id="tut-sheet" aria-hidden="true">
+  <div class="sheet-veil" data-sheet-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="安装教程" tabindex="-1">
+    <div class="sheet-steps">
+      <div class="sheet-step is-on" data-step="1">
+        <header class="sheet-head"><h2 class="sheet-title">安装教程</h2><span class="tut-count">1 / 5</span></header>
+        <p class="sheet-text">解压后拖进「应用程序」，双击打开<br>弹出「未打开」时，先点「完成」</p>
+        <figure class="tut-fig"><img src="assets/img/deskmate/install/1.webp" width="259" height="234" alt="系统弹窗：未打开，Apple 无法验证这个 App" loading="lazy" decoding="async"></figure>
+        <div class="sheet-actions one"><button class="cap cap-primary" type="button" data-sheet-step="2">下一步</button></div>
+      </div>
+      <div class="sheet-step" data-step="2">
+        <header class="sheet-head"><h2 class="sheet-title">安装教程</h2><span class="tut-count">2 / 5</span></header>
+        <p class="sheet-text">打开「系统设置」<br>点左边的「隐私与安全」</p>
+        <figure class="tut-fig"><img src="assets/img/deskmate/install/2.webp" width="480" height="406" alt="系统设置里的隐私与安全" loading="lazy" decoding="async"></figure>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-step="1">上一步</button><button class="cap cap-primary" type="button" data-sheet-step="3">下一步</button></div>
+      </div>
+      <div class="sheet-step" data-step="3">
+        <header class="sheet-head"><h2 class="sheet-title">安装教程</h2><span class="tut-count">3 / 5</span></header>
+        <p class="sheet-text">往下翻到「安全性」<br>在「已阻止…」那一行点「仍要打开」</p>
+        <figure class="tut-fig"><img src="assets/img/deskmate/install/3.webp" width="468" height="89" alt="已阻止这个 App 以保护 Mac，旁边是「仍要打开」按钮" loading="lazy" decoding="async"></figure>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-step="2">上一步</button><button class="cap cap-primary" type="button" data-sheet-step="4">下一步</button></div>
+      </div>
+      <div class="sheet-step" data-step="4">
+        <header class="sheet-head"><h2 class="sheet-title">安装教程</h2><span class="tut-count">4 / 5</span></header>
+        <p class="sheet-text">再点一次「仍要打开」</p>
+        <figure class="tut-fig"><img src="assets/img/deskmate/install/4.webp" width="259" height="318" alt="系统弹窗：打开这个 App？按钮有移到废纸篓、仍要打开、完成" loading="lazy" decoding="async"></figure>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-step="3">上一步</button><button class="cap cap-primary" type="button" data-sheet-step="5">下一步</button></div>
+      </div>
+      <div class="sheet-step" data-step="5">
+        <header class="sheet-head"><h2 class="sheet-title">安装教程</h2><span class="tut-count">5 / 5</span></header>
+        <p class="sheet-text">用触控 ID 或输入开机密码，即可打开</p>
+        <figure class="tut-fig"><img src="assets/img/deskmate/install/5.webp" width="260" height="257" alt="系统弹窗：使用触控 ID 或输入管理员密码" loading="lazy" decoding="async"></figure>
+        <div class="sheet-actions"><button class="cap" type="button" data-sheet-step="4">上一步</button><button class="cap cap-primary" type="button" data-sheet-close>好了</button></div>
       </div>
     </div>
   </div>
