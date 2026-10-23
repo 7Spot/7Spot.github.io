@@ -25,8 +25,11 @@
   --lg-spec: rgba(255, 255, 255, 0.95); --lg-thick: rgba(0, 30, 90, 0.1);
   --lg-text: var(--fg); --lg-text-shadow: none; --lg-shadow: rgba(10, 132, 255, 0.18);
   --pet-shadow: rgba(0, 0, 0, 0.16);   /* 详情卡里同桌脚下的影子 */
+  --sheet-a: rgba(255, 255, 255, 0.62); --sheet-b: rgba(255, 255, 255, 0.36); --sheet-rim-lo: rgba(0, 0, 0, 0.08);   /* 获取弹窗那块玻璃（不带蓝） */
+  --sheet-thick: rgba(0, 0, 0, 0.04); --sheet-shadow: rgba(0, 0, 0, 0.18); --get-veil: rgba(245, 245, 247, 0.4);
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --push: cubic-bezier(0.32, 0.72, 0, 1);   /* 和推层同一条 iOS 曲线：落款胶囊的宽高、获取弹窗换步时的高度（以前这个变量没定义，落款的宽高其实是跳变的） */
   --gutter: 16px;
   /* 三档尺寸：电脑 */
   --bubble-home: 200px; --bubble-item: 200px; --bubble-about: 210px;   /* 首页的球和同桌球一样大，推层时像一颗换成另一颗 */
@@ -79,6 +82,8 @@
     --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
     --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
     --pet-shadow: rgba(0, 0, 0, 0.5);
+    --sheet-a: rgba(255, 255, 255, 0.16); --sheet-b: rgba(255, 255, 255, 0.06); --sheet-rim-lo: rgba(0, 0, 0, 0.4);
+    --sheet-thick: rgba(0, 0, 0, 0.3); --sheet-shadow: rgba(0, 0, 0, 0.6); --get-veil: rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }
 }
@@ -98,6 +103,8 @@
   --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
   --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
   --pet-shadow: rgba(0, 0, 0, 0.5);
+  --sheet-a: rgba(255, 255, 255, 0.16); --sheet-b: rgba(255, 255, 255, 0.06); --sheet-rim-lo: rgba(0, 0, 0, 0.4);
+  --sheet-thick: rgba(0, 0, 0, 0.3); --sheet-shadow: rgba(0, 0, 0, 0.6); --get-veil: rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 
@@ -399,8 +406,10 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .app-meta h2 { font-size: clamp(28px, 3.6vw, 34px); line-height: 1.1; }
 .app-meta .sub { color: var(--muted); }
 .app-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-.pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 22px; border-radius: 980px; font-size: 15px; font-weight: 600; }
-.pill.get { background: var(--soft); color: var(--muted); cursor: default; }
+/* 「获取」：留给它的蓝色 Liquid Glass 胶囊（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
+.app-actions .get-btn { padding: 9px 24px; }
+.get-btn.is-off { color: var(--muted); background: var(--soft); box-shadow: none; text-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: default; }
+.get-btn.is-off::before, .get-btn.is-off::after { display: none; }
 .features li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--line); }
 .features li:first-child { border-top: 0; padding-top: 0; }
 .features b { font-weight: 600; }
@@ -420,6 +429,58 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   .pet-stage.is-sit { --pet-h: 131px; --pet-sh: 132px; }
   .features li { grid-template-columns: 5.5em 1fr; gap: 12px; }
 }
+
+/* ---------- 获取：Liquid Glass 弹窗。一块玻璃，三步在里面变形（高度过渡 + 字交叉淡入淡出，同落款翻面）；
+   打开 / 收回由脚本按进度驱动：从「获取」按钮的位置长出来、字由模糊变清楚，背后变暗变模糊，随时能反向 ---------- */
+.get-sheet { position: fixed; inset: 0; z-index: 14; display: none; touch-action: manipulation; }
+.get-sheet.is-open { display: block; }
+.get-veil { position: absolute; inset: 0; background: var(--get-veil); opacity: 0; }
+.get-panel {
+  position: absolute; left: 50%; top: 50%; isolation: isolate; overflow: hidden;
+  width: min(360px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 30px;
+  display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  text-align: left; color: var(--fg); outline: none;
+  background: linear-gradient(160deg, var(--sheet-a), var(--sheet-b));
+  -webkit-backdrop-filter: url(#lg-refract) blur(14px) saturate(180%);   /* Chrome：边缘折射，像一块厚玻璃 */
+  backdrop-filter: url(#lg-refract) blur(14px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 0 -14px 28px var(--sheet-thick), 0 30px 80px var(--sheet-shadow), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translate(-50%, -50%); opacity: 0;
+  transition: height 0.5s var(--push);
+}
+.no-refract .get-panel { -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); }   /* Safari 不认 SVG 滤镜，退回毛玻璃 */
+.get-panel::before {   /* 左上的高光 */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(60% 45% at 18% 0%, var(--lg-spec), rgba(255, 255, 255, 0) 70%); opacity: 0.55;
+}
+.get-panel::after {   /* 渐变亮边 */
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, var(--lg-rim-hi), rgba(255, 255, 255, 0.12) 35%, var(--sheet-rim-lo) 65%, rgba(255, 255, 255, 0.5));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+.get-steps { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+.get-step {
+  grid-area: 1 / 1; align-self: start; display: grid; gap: 10px;
+  opacity: 0; transform: translateY(6px); filter: blur(4px); pointer-events: none;
+  transition: opacity 0.32s var(--ease), transform 0.5s var(--ease-in), filter 0.5s var(--ease);
+}
+.get-step.is-on { opacity: 1; transform: none; filter: none; pointer-events: auto; }
+.get-head { display: flex; align-items: center; gap: 12px; }
+.get-title { font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+.get-text { font-size: 15px; line-height: 1.5; opacity: 0.86; text-wrap: pretty; }   /* pretty：最后一行不留孤零零的一两个字 */
+.get-note { font-size: 13px; color: var(--muted); }
+.get-list { counter-reset: step; display: grid; gap: 8px; margin: 2px 0; padding: 0; list-style: none; }   /* 序号是自己画的小圆圈，去掉浏览器自带的 1. 2. 3. 和缩进 */
+.get-list li { counter-increment: step; position: relative; padding-left: 28px; font-size: 14.5px; line-height: 1.5; opacity: 0.88; text-wrap: pretty; }
+.get-list li::before {
+  content: counter(step); position: absolute; left: 0; top: 2px; width: 19px; height: 19px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--soft);
+}
+.get-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.get-actions.one { grid-template-columns: 1fr; }
+.get-actions .cap { justify-content: center; padding: 12px 14px; font-size: 15px; }
+.get-actions .cap:hover { transform: none; }   /* 玻璃按钮悬停不位移 */
+.get-actions .cap:active { transform: scale(0.97); }
+body.get-open .trail { opacity: 0 !important; pointer-events: none !important; }
 
 /* ---------- 返回箭头：三个向左的箭头，贴着该层第一个节点的左边，位置由脚本每帧更新 ---------- */
 .back-chevrons {
@@ -486,7 +547,7 @@ body.preview .statebar { display: flex; }
   .bg::after { animation: tint-b 75s ease-in-out infinite alternate; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer { transition: none; }
+  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer, .get-panel, .get-step { transition: none; }
 }
 @keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px); } to { opacity: 1; letter-spacing: -0.03em; filter: blur(0); } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

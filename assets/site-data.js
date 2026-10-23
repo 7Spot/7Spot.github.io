@@ -20,7 +20,13 @@ window.SITE = {
       title: "同桌",
       sub: "你的桌面宠物",
       kind: "Mac 应用",
-      status: "developing"
+      status: "developing",
+      // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了
+      download: {
+        url: "https://github.com/7Spot/7Spot.github.io/releases/download/deskmate-dev-0.4.0/Deskmate-dev-0.4.0.zip",
+        size: "约 39MB",
+        req: "需要 M 芯片的 Mac，macOS 12 以上"
+      }
     }
   ],
 

@@ -87,7 +87,7 @@
             <div class="app-meta">
               <h2>同桌</h2>
               <p class="sub">你的桌面宠物</p>
-              <div class="app-actions"><span class="pill get" aria-disabled="true">获取</span><span class="tag">Mac 应用</span></div>
+              <div class="app-actions"><button class="cap cap-primary get-btn" type="button" data-get="deskmate" draggable="false">获取</button></div>
             </div>
           </header>
           <!-- 同桌本人：小组件里真实动画渲染的循环动图。文件由脚本按状态选（趴着打哈欠 / 今天醒过就坐着），减弱动态效果时放静止的一帧 -->
@@ -116,6 +116,35 @@
     <div class="about-ball" data-pos="2"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:2" data-shape="circle" data-link-from="about:1"><span class="bubble-text">每个小东西的起点，都源于一次灵光乍现</span></div></div></div></div>
     <div class="about-ball" data-pos="3"><div class="burst"><div class="float"><div class="bubble bubble-about" data-node="about:3" data-shape="circle" data-link-from="about:2"><span class="bubble-text">科幻里的奇点，似乎并没有那么遥远</span></div></div></div></div>
     <div class="about-credit"><div class="burst"><div class="float"><button class="credit" type="button" id="credit" data-node="credit" data-shape="rect" data-burst-delay="420" aria-label="开发伙伴"><span class="credit-layer credit-a is-on" id="credit-a">作者是我和几个 AI，它们说它们不做梦，我不信</span><span class="credit-layer credit-b" id="credit-b" aria-hidden="true"></span></button></div></div></div>
+  </div>
+</section>
+
+<!-- 获取：一块 Liquid Glass，三步在同一块玻璃里变形（获取 → 开发者版本 → 怎么打开）。从「获取」按钮的位置长出来，收回去也回到按钮里 -->
+<section class="get-sheet" id="get-sheet" aria-hidden="true">
+  <div class="get-veil" data-get-close></div>
+  <div class="get-panel" id="get-panel" role="dialog" aria-modal="true" aria-labelledby="get-title" tabindex="-1">
+    <div class="get-steps" id="get-steps">
+      <div class="get-step is-on" data-step="1">
+        <header class="get-head"><span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span><h2 class="get-title" id="get-title">获取</h2></header>
+        <p class="get-text">正式版本还在造梦，现在可以先试开发者版本</p>
+        <div class="get-actions"><button class="cap" type="button" data-get-close>取消</button><button class="cap cap-primary" type="button" data-get-step="2">获取开发者版本</button></div>
+      </div>
+      <div class="get-step" data-step="2">
+        <h2 class="get-title">开发者版本</h2>
+        <p class="get-text">里面有还没做完的功能，<br>也可能有以后会删掉的功能。</p>
+        <p class="get-note" id="get-req"></p>
+        <div class="get-actions"><button class="cap" type="button" data-get-close>取消</button><button class="cap cap-primary" type="button" data-get-download>确定下载</button></div>
+      </div>
+      <div class="get-step" data-step="3">
+        <h2 class="get-title">开始下载了</h2>
+        <ol class="get-list">
+          <li>在「下载」里找到它<br>（是压缩包就先双击解压）</li>
+          <li>拖进「应用程序」</li>
+          <li>第一次打开会被系统拦住：<br>去「系统设置 → 隐私与安全性」，<br>往下找到它，点「仍要打开」</li>
+        </ol>
+        <div class="get-actions one"><button class="cap cap-primary" type="button" data-get-close>好的</button></div>
+      </div>
+    </div>
   </div>
 </section>
 
