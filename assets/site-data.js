@@ -21,11 +21,15 @@ window.SITE = {
       sub: "你的桌面宠物",
       kind: "Mac 应用",
       status: "developing",
-      // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了
+      // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。
+      // os / chip：这个包能在什么设备上用。点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用只支持 M 芯片的 Mac」，
+      // 用户可以点「仍要下载」。chip: "arm" = 只支持 M 芯片。以后出 Windows 版怎么加、各浏览器怎么判断，见 CLAUDE.md「下载前的设备判断」
       download: {
         url: "https://github.com/7Spot/7Spot.github.io/releases/download/deskmate-dev-0.4.0/Deskmate-dev-0.4.0.zip",
         size: "约 39MB",
-        req: "需要 M 芯片的 Mac，macOS 12 以上"
+        req: "需要 M 芯片的 Mac，macOS 12 以上",
+        os: "mac",
+        chip: "arm"
       }
     }
   ],
