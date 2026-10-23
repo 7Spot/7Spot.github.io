@@ -28,6 +28,7 @@
   function daysAgo(s) { return Math.round((startOfToday() - parseDate(s)) / 864e5); }
   function dayWord(n) { return n <= 0 ? '今天' : n === 1 ? '昨天' : n === 2 ? '前天' : n + ' 天前'; }
   function itemById(id) { for (var i = 0; i < site.items.length; i++) if (site.items[i].id === id) return site.items[i]; return null; }
+  function fullTitle(it) { return it.title + (it.sub ? '：' + it.sub : ''); }   // 首页以外，名字都带上那句话：「同桌：你的桌面宠物」
   function sortedWakes() { return (site.wakes || []).slice().sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); }); }
   function latestWakeOf(id) { var ws = sortedWakes(); for (var i = 0; i < ws.length; i++) if (ws[i].item === id) return ws[i]; return null; }
   function developing() { for (var i = 0; i < site.items.length; i++) if (site.items[i].status === 'developing') return site.items[i]; return null; }
@@ -97,22 +98,32 @@
     if (stage) stage.classList.toggle('is-sit', pose === 'sit');
   }
 
-  // ---------- 小东西气泡：从数据生成 ----------
+  // ---------- 小东西气泡：从数据生成。字全在球里：图标、名字、那句话、种类和状态（球下面不挂字） ----------
   var itemsEl = document.getElementById('items');
   site.items.forEach(function (it) {
     var w = document.createElement('div');
     w.className = 'item';
     w.innerHTML =
-      '<div class="float"><button class="bubble bubble-item" type="button" data-node="item:' + it.id + '" data-shape="circle" data-go="' + it.id + '" aria-label="' + esc(it.title) + '">' +
+      '<div class="float"><button class="bubble bubble-item" type="button" data-node="item:' + it.id + '" data-shape="circle" data-go="' + it.id + '" aria-label="' + esc(fullTitle(it)) + '">' +
         '<span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span>' +
-        '<span class="bubble-text">' + esc(it.bubble || it.sub).replace(/\n/g, '<br>') + '</span>' +
-      '</button></div>' +
-      '<span class="item-below">' +
-        '<span class="label">' + esc(it.title) + '</span>' +
-        '<span class="tags"><span class="tag">' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>' +
-      '</span>';
+        '<span class="item-name">' + esc(it.title) + '</span>' +
+        '<span class="item-sub">' + esc(it.sub) + '</span>' +
+        '<span class="item-meta"><span>' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>' +
+      '</button></div>';
     itemsEl.appendChild(w);
   });
+  // 最后一颗：更多小东西。和同桌同级、一样大，但没有下一层：按下只弹一下，不跳转，右边也没有线
+  if (site.more) {
+    var mw = document.createElement('div');
+    mw.className = 'item';
+    mw.innerHTML =
+      '<div class="float"><div class="bubble bubble-item bubble-more" data-node="more" data-shape="circle">' +
+        '<span class="app-icon-slot" aria-hidden="true"></span>' +
+        '<span class="item-name">' + esc(site.more.title) + '</span>' +
+        '<span class="item-sub">' + esc(site.more.sub) + '</span>' +
+      '</div></div>';
+    itemsEl.appendChild(mw);
+  }
 
   // ---------- 层级：位置全在脚本手里 ----------
   var stage = document.getElementById('stage');
@@ -147,62 +158,71 @@
   var pushEase = bezier(0.32, 0.72, 0, 1);
   var PUSH_T = 900;
 
-  function tween(L, to) {
+  // 松手后的曲线：起步速度 = 手速（s 是起步斜率），到终点速度为 0。s ≥ 1.5 时一路只减速；手很慢（s 小）时先轻轻加速再停，最快也只有平均速度的 1.5 倍。
+  // （iOS 那条曲线点击时用：它在前 17% 的时间里会加速到平均速度的 4 倍，接在手后面就像被推了一把）
+  function releaseEase(s) { return function (u) { return s * (u - 2 * u * u + u * u * u) + 3 * u * u - 2 * u * u * u; }; }
+  // v：松手时手的速度（每秒几个屏宽）。有 v 就从手速接着走：不停顿、不突然加速
+  function tween(L, to, v) {
     if (reduce) { L.x = to; L.anim = false; return; }
     if (!L.anim && L.x === to) return;
-    if (L.anim && L.to === to) return;   // 已经在往同一个目标走，不重启缓动
+    if (L.anim && L.to === to && v === undefined) return;   // 已经在往同一个目标走，不重启缓动
+    var dist = to - L.x;
     L.from = L.x; L.to = to; L.t0 = performance.now();
-    L.dur = Math.max(260, PUSH_T * Math.min(1, Math.abs(to - L.x)));
+    L.dur = Math.max(260, PUSH_T * Math.min(1, Math.abs(dist)));
+    L.ease = pushEase;
+    if (v !== undefined && Math.abs(dist) > 1e-4) {
+      var k = v / dist;   // 照手速，每秒能走完剩下这段几次
+      if (k > 0) L.dur = Math.max(300, Math.min(PUSH_T, 2000 / k));   // 起步斜率 2：一路减速着到；手太慢就最长 900ms
+      L.ease = releaseEase(Math.max(-1, Math.min(3, k * L.dur / 1000)));   // 手往反方向甩：先顺着走一点点再回来
+    }
     L.anim = true;
   }
-  function titleOf(name) { var it = itemById(name); return it ? it.title : (levels[name] && levels[name].el.dataset.title) || name; }
+  function titleOf(name) { var it = itemById(name); return it ? fullTitle(it) : (levels[name] && levels[name].el.dataset.title) || name; }
   function pathOf(name) { var p = [], n = name; while (n && levels[n]) { p.unshift(n); n = levels[n].parent; } return p; }
-  // 没去过的地方不提示：这次会话去过的层记在 visited 里（刷新即忘）。“下一层”只认去过的唯一子层，线、底栏、前滑、键盘都从这里取
-  var visited = {};
-  function markVisited(name) { pathOf(name).forEach(function (n) { visited[n] = true; }); }
-  function nextOf(name) {
-    var kids = levelList.filter(function (L) { return L.parent === name && visited[L.name]; });
-    return kids.length === 1 ? kids[0].name : null;
-  }
-  // 底栏画的路：当前路径，再沿着去过的唯一子层往后接
+  // 没去过的地方不提示：这次会话去过的层记在 visited 里（刷新即忘）。“下一层”只记每层最后一次进的那个子层（lastChild），线、底栏、往深处滑、键盘都从这里取
+  var visited = {}, lastChild = {};
+  function markVisited(name) { var p = pathOf(name); p.forEach(function (n, i) { visited[n] = true; if (i) lastChild[p[i - 1]] = n; }); }
+  function nextOf(name) { var c = lastChild[name]; return c && visited[c] ? c : null; }
+  // 底栏画的路：当前路径，再沿着每层最后一次进的子层往后接
   function knownPath() { var p = pathOf(current), n; while ((n = nextOf(p[p.length - 1]))) p.push(n); return p; }
   // 把每一层送到它该在的位置：目标层 0，祖先 -1，其他 +1
-  function settle(target, instant) {
+  function settle(target, instant, v) {
     var path = pathOf(target);
     levelList.forEach(function (L) {
       var to = L.name === target ? 0 : path.indexOf(L.name) >= 0 ? -1 : 1;
-      if (instant) { L.x = to; L.anim = false; } else tween(L, to);
+      if (instant) { L.x = to; L.anim = false; } else tween(L, to, v);
     });
   }
-  function setLevel(target, instant) {
+  function setLevel(target, instant, v) {
     if (!levels[target]) target = 'home';
-    if (target === current) { settle(target, instant); return; }
+    if (target === current) { settle(target, instant, v); return; }
     current = target; markVisited(target);
     levelList.forEach(function (L) {
       if (L.name === target) { L.el.removeAttribute('inert'); L.el.setAttribute('aria-hidden', 'false'); }
       else { L.el.setAttribute('inert', ''); L.el.setAttribute('aria-hidden', 'true'); }
     });
     document.body.dataset.level = target;
-    settle(target, instant);
+    settle(target, instant, v);
     setLinesTarget(target === 'home' ? 0 : 1, instant);
     if (!trailD.fromTrail) stopLinger();   // 不是从底栏回的首页，底栏照常隐去
     updateNav();
   }
   function hashOf(name) { return name === 'home' ? location.pathname + location.search : '#' + name; }
   function nameFromHash() { var h = location.hash.replace('#', ''); return levels[h] ? h : 'home'; }
-  function go(name) {
+  function go(name, v) {
     if (name === 'about') { openAbout(true); return; }
     if (!levels[name] || name === current) return;
-    history.pushState({ level: name }, '', hashOf(name));
-    setLevel(name);
+    history.pushState({ level: name, from: current }, '', hashOf(name));   // from：从哪层推进来的，往回时用
+    setLevel(name, false, v);
   }
-  function back() {
+  function back(v) {
     if (current === 'home') return;
     var parent = levels[current].parent || 'home';
-    if (history.state && history.state.level === current) { setLevel(parent); history.back(); }
-    else { history.replaceState({ level: parent }, '', hashOf(parent)); setLevel(parent); }
+    // 只有这条记录是网站自己从上一层推进来的，才用浏览器后退；直达链接（如 #deskmate）进来的，后退会退出网站，所以原地换成上一层
+    if (history.state && history.state.level === current && history.state.from === parent) { setLevel(parent, false, v); history.back(); }
+    else { history.replaceState({ level: parent }, '', hashOf(parent)); setLevel(parent, false, v); }
   }
-  function forward() { var n = nextOf(current); if (n) go(n); }
+  function forward(v) { var n = nextOf(current); if (n) go(n, v); }
   // 点底部圆点：往回是弹
   function jump(name) {
     if (name === current) return;
@@ -332,8 +352,8 @@
   // ---------- 滑动：触控板、手指、鼠标按住，三种输入共用一条路；可点的东西上也能滑 ----------
   var drag = null;
   function dragBegin(kind) {
-    var par = levels[current].parent, nxt = nextOf(current), cx = levels[current].x;   // 从这一层现在的位置接着拖：正在动的时候抓住也不跳
-    drag = { kind: kind, base: cx, p: cx, cur: levels[current], par: par ? levels[par] : null, nxt: nxt ? levels[nxt] : null, t0: performance.now(), lastP: cx, lastT: performance.now(), v: 0 };
+    var par = levels[current].parent, nxt = nextOf(current), cx = levels[current].x, now = performance.now();   // 从这一层现在的位置接着拖：正在动的时候抓住也不跳
+    drag = { kind: kind, base: cx, p: cx, cur: levels[current], par: par ? levels[par] : null, nxt: nxt ? levels[nxt] : null, hist: [[now, cx]] };
     [drag.cur, drag.par, drag.nxt].forEach(function (L) { if (L) L.anim = false; });
     stage.classList.add('is-dragging');
   }
@@ -343,25 +363,38 @@
     if (p > 0 && !drag.par) p *= 0.25;
     if (p < 0 && !drag.nxt) p *= 0.25;
     p = Math.max(-1, Math.min(1, p));
-    var now = performance.now(), dt = now - drag.lastT;
-    if (dt > 0) drag.v = drag.v * 0.6 + ((p - drag.lastP) / dt * 1000) * 0.4;
-    drag.lastP = p; drag.lastT = now; drag.p = p;
+    var now = performance.now(), h = drag.hist;
+    h.push([now, p]); while (h.length > 2 && now - h[0][0] > 120) h.shift();   // 只留最近 120ms，算松手速度用
+    drag.p = p;
     drag.cur.x = p;
     if (drag.par) drag.par.x = -1 + Math.max(0, p);
     if (drag.nxt) drag.nxt.x = 1 + Math.min(0, p);
   }
-  // 返回 true 表示这次滑动翻了层
-  function dragEnd() {
+  // 松手时的速度（每秒几个屏宽，正 = 往回）：最近 60ms 走了多远。at 之前 80ms 都没动（手停住了再松开）就是 0
+  function dragVelocity(d, at) {
+    var h = d.hist, last = h[h.length - 1], i = h.length - 1;
+    if (at - last[0] > 80) return 0;
+    while (i > 0 && last[0] - h[i - 1][0] <= 60) i--;
+    if (i === h.length - 1 && i > 0) i--;
+    var span = (last[0] - h[i][0]) / 1000;
+    return span > 0.004 ? Math.max(-6, Math.min(6, (last[1] - h[i][1]) / span)) : 0;
+  }
+  // 返回 true 表示这次滑动翻了层。at：按哪个时刻算速度（触控板停了一会儿才判定时，按最后一个信号算）
+  function dragEnd(at) {
     if (!drag) return false;
     var d = drag; drag = null;
     stage.classList.remove('is-dragging');
-    var stale = performance.now() - d.lastT > 120, v = stale ? 0 : d.v;
-    if ((d.p > 0.3 || (v > 0.9 && d.p > 0.05)) && d.par) { back(); return true; }
-    if ((d.p < -0.3 || (v < -0.9 && d.p < -0.05)) && d.nxt) { forward(); return true; }
-    settle(current);
+    var v = dragVelocity(d, at || performance.now());
+    // 抓住正在动的层、几乎没动就松开：不改去向，从这里接着走完
+    if (Math.abs(d.p - d.base) < 0.02 && Math.abs(v) < 0.3) { settle(current, false, v); return false; }
+    // 这一下滑了多远，再照这个速度多滑 0.2 秒：过了 30% 就翻一层。慢慢拖过 30%、或者快速一甩都行。
+    // 从抓住的地方算，不看层的绝对位置：翻层动画还没走完就接着滑，层可能还在半路上，连滑两下就是翻两层
+    var proj = d.p - d.base + v * 0.2;
+    if (proj > 0.3 && d.par) { back(v); return true; }
+    if (proj < -0.3 && d.nxt) { forward(v); return true; }
+    settle(current, false, v);
     return false;
   }
-  function anyAnim() { for (var i = 0; i < levelList.length; i++) if (levelList[i].anim) return true; return false; }
 
   // 手指 / 鼠标：从任何地方按下都能拖，包括球和胶囊上
   (function () {
@@ -388,30 +421,54 @@
     window.addEventListener('pointercancel', up);
   })();
 
-  // 触控板两指：累计超过死区才算开始，细微抖动一律忽略
+  // 触控板两指：手指在动就跟手。手一离开，系统会接着发一串一帧比一帧小的信号（惯性）：认出这串信号就当手已经离开，
+  // 马上按位置和速度判定，剩下的惯性只吞掉、不推页面；惯性里信号又变大或反向，就是手又放上来了，接着拖。
+  // 方向在起手的 12px 里锁定：横的才拖层，竖的不管。翻层动画进行中也能接着拖（从层现在的位置接着走），没有冷却
   (function () {
-    var acc = 0, pre = 0, active = false, timer = null, preTimer = null, cooldown = 0, DEAD = 24;
+    var LOCK = 12, GAP = 120;
+    var mode = 'idle', sx = 0, sy = 0, acc = 0, peak = 0, prevD = 0, prevT = 0, dec = 0, decT = 0, lastT = 0, timer = null;
+    function release(at) { clearTimeout(timer); if (drag && drag.kind === 'wheel') dragEnd(at); }
     window.addEventListener('wheel', function (e) {
-      if (about.target === 1) return;
-      var horiz = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-      if (!horiz && !active) return;
-      e.preventDefault();
-      var now = performance.now();
-      if (now < cooldown) return;
-      if (!active) {
-        if (anyAnim() || drag || Math.abs(e.deltaX) < 2) return;
-        pre += e.deltaX;
-        clearTimeout(preTimer); preTimer = setTimeout(function () { pre = 0; }, 200);
-        if (Math.abs(pre) < DEAD) return;
-        active = true; acc = pre; pre = 0; dragBegin('wheel');
-      } else {
-        acc += e.deltaX;
+      if (about.target === 1 || e.ctrlKey) return;   // 按着 ctrl / 双指捏合是缩放，不管
+      var k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? W : 1;
+      var dx = e.deltaX * k, dy = e.deltaY * k, ax = Math.abs(dx), now = performance.now();
+      if (mode === 'drag' && !(drag && drag.kind === 'wheel')) mode = 'idle';
+      if (mode !== 'idle' && now - lastT > GAP) mode = 'idle';   // 停了一会儿：上一个手势已经结束
+      if (mode === 'tail') {
+        var fresh = (ax > Math.abs(prevD) * 1.3 + 0.5 && ax >= 3) || (dx * prevD < 0 && ax >= 2) || Math.abs(dy) > ax * 1.5 + 2;
+        if (!fresh) { e.preventDefault(); prevD = dx; lastT = now; return; }
+        mode = 'idle';
       }
-      dragUpdate(-acc / W);
+      if (mode === 'vertical') { lastT = now; return; }
+      if (mode === 'idle') {
+        if (drag) return;   // 手指 / 鼠标正在拖
+        mode = 'pre'; sx = 0; sy = 0;
+      }
+      lastT = now;
+      if (mode === 'pre') {
+        sx += dx; sy += dy;
+        if (Math.abs(sx) >= Math.abs(sy)) e.preventDefault();
+        if (Math.abs(sx) + Math.abs(sy) < LOCK) return;
+        if (Math.abs(sx) <= Math.abs(sy)) { mode = 'vertical'; return; }
+        mode = 'drag'; acc = 0; peak = ax; prevD = dx; prevT = now; dec = 0;
+        dragBegin('wheel');   // 从这里开始跟；防误触的那 12px 不补上，所以起步不会一下跳过去
+      } else {
+        e.preventDefault();
+        acc += dx;
+        dragUpdate(-acc / W);
+        // 惯性：同一方向一帧比一帧小，每帧缩到上一帧的 80%–99.5%（人手停下来通常比这陡、而且不匀）；相等的不算也不打断。
+        // 连着 3 次、跨过 24ms、并且已经比最快时慢了一截，就当手离开了
+        var r = Math.abs(prevD) > 0.01 ? ax / Math.abs(prevD) : 1;
+        if (dx * prevD > 0 && r < 0.995 && r >= 0.8) { if (!dec) decT = prevT; dec++; }
+        else if (dx * prevD <= 0 || r < 0.8 || r > 1.005) dec = 0;
+        peak = Math.max(peak, ax);
+        prevD = dx; prevT = now;
+        if (dec >= 3 && now - decT >= 24 && ax < peak * 0.85) { mode = 'tail'; release(now); return; }
+      }
       clearTimeout(timer);
-      timer = setTimeout(function () { active = false; cooldown = performance.now() + 500; dragEnd(); }, 120);
+      timer = setTimeout(function () { if (mode === 'drag') { mode = 'idle'; release(lastT); } else if (mode === 'pre') mode = 'idle'; }, GAP);
     }, { passive: false });
-    function abort() { clearTimeout(timer); if (active) { active = false; dragEnd(); } pre = 0; }
+    function abort() { clearTimeout(timer); if (mode === 'drag') release(performance.now()); mode = 'idle'; }
     window.addEventListener('blur', abort);
     document.addEventListener('visibilitychange', function () { if (document.hidden) abort(); });
   })();
@@ -459,7 +516,7 @@
   [].forEach.call(document.querySelectorAll('img[data-pet]'), function (im) { im.addEventListener('load', function () { needMeasure = true; }); });
   // 层内滚动、窗口变化、字体加载：重新量位置
   levelList.forEach(function (L) { L.el.addEventListener('scroll', function () { needMeasure = true; }, { passive: true }); });
-  window.addEventListener('resize', function () { W = stage.clientWidth || window.innerWidth; H = window.innerHeight; needMeasure = true; about.needMeasure = true; fitMask(); });
+  window.addEventListener('resize', function () { W = stage.clientWidth || window.innerWidth; H = window.innerHeight; needMeasure = true; about.needMeasure = true; fitFade(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { needMeasure = true; about.needMeasure = true; });
 
   // ---------- 背景光点 ----------
@@ -491,9 +548,10 @@
   }
 
   // ---------- 节点与连线：端点和气泡用同一组数字 ----------
-  var svg = document.getElementById('lines'), linesG = document.getElementById('lines-g'), grad = document.getElementById('edgeFade');
-  function fitMask() { grad.setAttribute('x2', window.innerWidth); var k = Math.min(0.45, 180 / window.innerWidth); var st = grad.querySelectorAll('stop'); st[1].setAttribute('offset', k); st[2].setAttribute('offset', 1 - k); }
-  fitMask();
+  // 线靠屏幕左右边缘的一截淡出：渐变直接用在线条和端点上（以前用遮罩，遮罩每帧都要把一大块重画一遍）
+  var svg = document.getElementById('lines'), linesG = document.getElementById('lines-g'), grad = document.getElementById('lineFade');
+  function fitFade() { grad.setAttribute('x2', window.innerWidth); var k = Math.min(0.45, 180 / window.innerWidth); var st = grad.querySelectorAll('stop'); st[1].setAttribute('offset', k); st[2].setAttribute('offset', 1 - k); }
+  fitFade();
   var nodes = [].slice.call(document.querySelectorAll('[data-node]')).map(function (el) {
     var lv = el.closest('.level');
     return { el: el, name: el.dataset.node, shape: el.dataset.shape || 'rect', level: lv ? levels[lv.dataset.level] : null, about: !lv, f: el.closest('.float'), burst: el.closest('.burst'), base: null };
@@ -707,10 +765,24 @@
 
   // 落款胶囊：两层文字交叉淡入淡出，尺寸从量好的旧尺寸过渡到新尺寸；每次重开都回到第一句
   var creditBtn = document.getElementById('credit'), layerA = document.getElementById('credit-a'), layerB = document.getElementById('credit-b');
-  layerB.textContent = '开发伙伴：' + (site.credits || []).join(' · ');
+  // 每个名字整个不拆（手机上折行只在 · 处折，不会把「Claude Opus」和「5.5」拆到两行）
+  layerB.innerHTML = '开发伙伴：' + (site.credits || []).map(function (c) { return '<span class="credit-name">' + esc(c) + '</span>'; }).join(' · ');
   var creditState = 'a', creditSize = null;
+  // 折成几行时，把这一层的宽度收到最长那一行：胶囊贴着字，不会左右空一截
+  function fitLines(el) {
+    el.style.width = '';
+    var r = document.createRange(); r.selectNodeContents(el);
+    var rects = [].slice.call(r.getClientRects()).sort(function (a, b) { return a.top - b.top; }), lines = [];
+    rects.forEach(function (q) {
+      var y = (q.top + q.bottom) / 2, L = lines[lines.length - 1];
+      if (L && Math.abs(L.y - y) < 4) { L.l = Math.min(L.l, q.left); L.r = Math.max(L.r, q.right); }
+      else lines.push({ y: y, l: q.left, r: q.right });
+    });
+    if (lines.length > 1) el.style.width = Math.ceil(Math.max.apply(null, lines.map(function (L) { return L.r - L.l; }))) + 1 + 'px';
+  }
   function measureCredit() {
     creditBtn.style.transition = 'none'; creditBtn.style.width = ''; creditBtn.style.height = '';
+    fitLines(layerA); fitLines(layerB);
     var cs = getComputedStyle(creditBtn);
     var px = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
     var py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
@@ -780,18 +852,20 @@
   window.addEventListener('pointerup', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(!ballPt.moved); });
   window.addEventListener('pointercancel', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(false); });
 
-  // 首页的球：按下缩到 0.96、松手弹回（随后的 click 推到小东西层）；呼吸（±1.25%，8s 一轮）也由弹簧目标做，不用 CSS 动画，两套缩放不打架
-  var homeFloat = document.querySelector('.home-float'), homeBall = document.querySelector('.bubble-home');
-  if (homeFloat && homeBall) {
-    homeFloat._d = freshSpring(); homeFloat._d.breathe = true;
-    (function () {
-      var id = null;
-      homeBall.addEventListener('pointerdown', function (e) { if (e.button !== 0 || id !== null) return; id = e.pointerId; homeFloat._d.hold = true; homeFloat._d.ts = 0.96; homeBall.classList.add('is-held'); });
-      function up(e) { if (id === null || e.pointerId !== id) return; id = null; var d = homeFloat._d; d.hold = false; d.ts = 1; d.vs -= 1.2; homeBall.classList.remove('is-held'); }
-      window.addEventListener('pointerup', up);
-      window.addEventListener('pointercancel', up);
-    })();
+  // 按一下会弹的球：按下缩到 0.96、松手弹回来（kick 是弹回来时多给的那一下）。
+  // 首页的球（随后的 click 推到小东西层；呼吸 ±1.25%、8s 一轮也由弹簧目标做，不用 CSS 动画，两套缩放不打架）、「更多小东西」（不跳转，只弹一下）
+  function pressable(ball, kick, breathe) {
+    var f = ball && ball.closest('.float');
+    if (!f) return;
+    f._d = freshSpring(); f._d.breathe = !!breathe;
+    var id = null;
+    ball.addEventListener('pointerdown', function (e) { if (e.button !== 0 || id !== null) return; id = e.pointerId; f._d.hold = true; f._d.ts = 0.96; ball.classList.add('is-held'); });
+    function up(e) { if (id === null || e.pointerId !== id) return; id = null; var d = f._d; d.hold = false; d.ts = 1; d.vs -= kick; ball.classList.remove('is-held'); }
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   }
+  pressable(document.querySelector('.bubble-home'), 1.2, true);
+  pressable(document.querySelector('.bubble-more'), 1.6, false);
 
   // ---------- 每一帧 ----------
   var tickLast = 0;
@@ -801,7 +875,7 @@
     levelList.forEach(function (L) {
       if (L.anim) {
         var k = Math.min(1, (t - L.t0) / L.dur);
-        L.x = L.from + (L.to - L.from) * pushEase(k);
+        L.x = L.from + (L.to - L.from) * (L.ease || pushEase)(k);
         if (k >= 1) { L.x = L.to; L.anim = false; }
       }
       L.el.style.transform = 'translate3d(' + (L.x * W).toFixed(2) + 'px,' + L.y.toFixed(2) + 'px,0)';
@@ -835,7 +909,7 @@
       linesAlpha.v = linesAlpha.from + (linesAlpha.to - linesAlpha.from) * pushEase(ka);
       if (ka >= 1) linesAlpha.v = linesAlpha.to;
     }
-    linesG.style.opacity = linesAlpha.v.toFixed(3);
+    svg.style.opacity = linesAlpha.v.toFixed(3);   // 透明度放在整张 svg 上，交给合成，不用重画线
     // 5. 返回箭头、底栏
     chevronTick(t);
     trailTick(dt);
