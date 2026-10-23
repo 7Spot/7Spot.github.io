@@ -8,19 +8,22 @@ window.SITE = {
   // 格式：{ date: "2026-11-01", item: "deskmate", note: "同桌 1.0 可以下载了" }
   wakes: [],
 
-  // 开发伙伴：关于页落款胶囊点一下显示的名单。以后换模型就往后加。
-  credits: ["JUN7", "Claude Fable 5.1", "ChatGPT GPT-6"],
+  // 开发伙伴：关于页落款胶囊点一下显示的名单。同一家的排在一起（新的 Claude 跟在 Claude 后面）。
+  credits: ["JUN7", "Claude Fable 5.1", "Claude Opus 5.5", "ChatGPT GPT-6"],
 
-  // 小东西。status：developing 造梦中 / released 已发布
+  // 小东西。球里显示：图标、title、sub、kind 和状态；首页以外名字都写成「title：sub」。
+  // status：developing 造梦中 / released 已发布
   items: [
     {
       id: "deskmate",
       no: "01",
       title: "同桌",
-      sub: "住在你桌面上的一只宠物",
-      bubble: "住在你桌面上的\n一只宠物",   // 气泡里的换行位置
+      sub: "你的桌面宠物",
       kind: "Mac 应用",
       status: "developing"
     }
-  ]
+  ],
+
+  // 小东西层最后那颗球：和小东西一样大、同一级，但没有下一层，按下只弹一下。
+  more: { title: "更多小东西", sub: "敬请期待" }
 };

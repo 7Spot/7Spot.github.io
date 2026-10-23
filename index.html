@@ -17,20 +17,17 @@
 <!-- 背景：不动，只有光点慢慢飘 -->
 <div class="bg" id="bg" aria-hidden="true"></div>
 
-<!-- 连线：和气泡同一帧、同一组坐标画；靠屏幕边缘的一截渐变淡出 -->
+<!-- 连线：和气泡同一帧、同一组坐标画；靠屏幕边缘的一截渐变淡出（渐变直接当线和端点的颜色，颜色在 style.css） -->
 <svg class="lines" id="lines" aria-hidden="true">
   <defs>
-    <linearGradient id="edgeFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
-      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="0.12" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="0.88" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <linearGradient id="lineFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
+      <stop offset="0" class="fade-out"/>
+      <stop offset="0.12"/>
+      <stop offset="0.88"/>
+      <stop offset="1" class="fade-out"/>
     </linearGradient>
-    <mask id="edgeMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
-      <rect x="0" y="0" width="100%" height="100%" fill="url(#edgeFade)"/>
-    </mask>
   </defs>
-  <g id="lines-g" mask="url(#edgeMask)"></g>
+  <g id="lines-g"></g>
 </svg>
 
 <!-- 爪印图标（占位）与 Liquid Glass 的折射滤镜 -->
@@ -71,7 +68,7 @@
     </div>
   </section>
 
-  <!-- 第二层：小东西（气泡由数据生成） -->
+  <!-- 第二层：小东西（气泡由数据生成，最后一颗是「更多小东西」；同一层的球整组上下居中） -->
   <section class="level" data-level="things" data-title="小东西" data-parent="home" data-parent-node='[data-node="home"]'>
     <button class="back-chevrons" type="button" data-back aria-label="返回上一层"><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg></button>
     <div class="level-in">
@@ -89,7 +86,7 @@
             <span class="app-icon big" aria-hidden="true"><svg><use href="#paw"/></svg></span>
             <div class="app-meta">
               <h2>同桌</h2>
-              <p class="sub">住在你桌面上的一只宠物</p>
+              <p class="sub">你的桌面宠物</p>
               <div class="app-actions"><span class="pill get" aria-disabled="true">获取</span><span class="tag">Mac 应用</span></div>
             </div>
           </header>
