@@ -464,6 +464,11 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(1); opacity: 1;
   transition: transform 0.46s var(--push), opacity 0.18s var(--ease), height 0.5s var(--push);
 }
+/* 从一个弹窗切到另一个（获取第三步点「安装教程」）：旧玻璃原地淡出、不缩回按钮；背后的遮罩接着用——旧的直接拿掉，新的直接到位，不闪 */
+.sheet.is-leaving { pointer-events: none; }
+.sheet.is-leaving .sheet-veil { opacity: 0; transition: none; }
+.sheet.is-leaving .sheet-panel { opacity: 0; transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(0.96); transition: opacity 0.2s var(--ease), transform 0.2s var(--ease); }
+.sheet.veil-now .sheet-veil { transition: none; }
 .no-refract .sheet-panel { -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); }   /* Safari 不认 SVG 滤镜，退回毛玻璃 */
 .sheet-panel::before {   /* 左上的高光 */
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
@@ -487,6 +492,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .sheet-title { font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
 .sheet-text { font-size: 15px; line-height: 1.5; opacity: 0.86; text-wrap: pretty; }   /* pretty：最后一行不留孤零零的一两个字 */
 .sheet-note { font-size: 13px; color: var(--muted); }
+.sheet-quote { color: var(--muted); }   /* 引用系统弹窗里的原话 */
 .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
 .sheet-actions.one { grid-template-columns: 1fr; }
 .sheet-actions .cap { justify-content: center; padding: 12px 14px; font-size: 15px; }
@@ -567,7 +573,7 @@ body.preview .statebar { display: flex; }
   .bg::after { animation: tint-b 75s ease-in-out infinite alternate; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer, .sheet-veil, .sheet-panel, .sheet-step, .sheet.is-shown .sheet-veil, .sheet.is-shown .sheet-panel { transition: none; }
+  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer, .sheet-veil, .sheet-panel, .sheet-step, .sheet.is-shown .sheet-veil, .sheet.is-shown .sheet-panel, .sheet.is-leaving .sheet-panel { transition: none; }
 }
 @keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px); } to { opacity: 1; letter-spacing: -0.03em; filter: blur(0); } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
