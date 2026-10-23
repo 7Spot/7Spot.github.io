@@ -410,6 +410,9 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .app-actions .get-btn { padding: 9px 24px; }
 .get-btn.is-off { color: var(--muted); background: var(--soft); box-shadow: none; text-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: default; }
 .get-btn.is-off::before, .get-btn.is-off::after { display: none; }
+/* 「安装教程」：「获取」右边的透明玻璃胶囊，和它一样高；悬停不位移 */
+.app-actions .tut-btn { padding: 9px 18px; }
+.tut-btn:hover { transform: none; }
 .features li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--line); }
 .features li:first-child { border-top: 0; padding-top: 0; }
 .features b { font-weight: 600; }
@@ -430,19 +433,19 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   .features li { grid-template-columns: 5.5em 1fr; gap: 12px; }
 }
 
-/* ---------- 获取：Liquid Glass 弹窗。一块玻璃，三步在里面变形（高度过渡 + 字交叉淡入淡出）。
+/* ---------- 弹窗（获取、安装教程）：Liquid Glass。一块玻璃，几步在里面变形（高度过渡 + 字交叉淡入淡出）。
    打开 / 收回用 CSS 过渡（交给系统合成，Safari 里也能跑满屏幕刷新率；脚本逐帧画在 Safari 只有 60 帧）：
    .is-shown 加上 / 去掉，玻璃从「获取」按钮的位置（--ox / --oy，脚本量好）长出来、缩回去，中途切换就从当前样子反向。
    只动 transform 和 opacity，不逐帧改模糊半径（Safari 里改模糊半径要重画，会卡）：背后的模糊程度固定，只淡入淡出 ---------- */
-.get-sheet { position: fixed; inset: 0; z-index: 14; display: none; touch-action: manipulation; }
-.get-sheet.is-open { display: block; }
-.get-veil {
+.sheet { position: fixed; inset: 0; z-index: 14; display: none; touch-action: manipulation; }
+.sheet.is-open { display: block; }
+.sheet-veil {
   position: absolute; inset: 0; background: var(--get-veil); opacity: 0;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   transition: opacity 0.32s var(--ease);
 }
-.get-sheet.is-shown .get-veil { opacity: 1; transition: opacity 0.46s var(--ease-in); }
-.get-panel {
+.sheet.is-shown .sheet-veil { opacity: 1; transition: opacity 0.46s var(--ease-in); }
+.sheet-panel {
   position: absolute; left: 50%; top: 50%; isolation: isolate; overflow: hidden;
   width: min(360px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 30px;
   display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr);
@@ -457,45 +460,47 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   will-change: transform, opacity;
 }
 /* 打开：iOS 曲线弹到屏幕中间，很快就不透明 */
-.get-sheet.is-shown .get-panel {
+.sheet.is-shown .sheet-panel {
   transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(1); opacity: 1;
   transition: transform 0.46s var(--push), opacity 0.18s var(--ease), height 0.5s var(--push);
 }
-.no-refract .get-panel { -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); }   /* Safari 不认 SVG 滤镜，退回毛玻璃 */
-.get-panel::before {   /* 左上的高光 */
+.no-refract .sheet-panel { -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); }   /* Safari 不认 SVG 滤镜，退回毛玻璃 */
+.sheet-panel::before {   /* 左上的高光 */
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
   background: radial-gradient(60% 45% at 18% 0%, var(--lg-spec), rgba(255, 255, 255, 0) 70%); opacity: 0.55;
 }
-.get-panel::after {   /* 渐变亮边 */
+.sheet-panel::after {   /* 渐变亮边 */
   content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
   background: linear-gradient(140deg, var(--lg-rim-hi), rgba(255, 255, 255, 0.12) 35%, var(--sheet-rim-lo) 65%, rgba(255, 255, 255, 0.5));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
 }
-.get-steps { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
-.get-step {   /* 换步：只淡入淡出 + 轻轻上移，放在合成层上（不带模糊，Safari 里模糊过渡要重画） */
+.sheet-steps { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+.sheet-step {   /* 换步：只淡入淡出 + 轻轻上移，放在合成层上（不带模糊，Safari 里模糊过渡要重画） */
   grid-area: 1 / 1; align-self: start; display: grid; gap: 10px;
   opacity: 0; transform: translateY(6px); pointer-events: none;
   transition: opacity 0.32s var(--ease), transform 0.5s var(--ease-in);
   will-change: opacity, transform;
 }
-.get-step.is-on { opacity: 1; transform: none; pointer-events: auto; }
-.get-head { display: flex; align-items: center; gap: 12px; }
-.get-title { font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
-.get-text { font-size: 15px; line-height: 1.5; opacity: 0.86; text-wrap: pretty; }   /* pretty：最后一行不留孤零零的一两个字 */
-.get-note { font-size: 13px; color: var(--muted); }
-.get-list { counter-reset: step; display: grid; gap: 8px; margin: 2px 0; padding: 0; list-style: none; }   /* 序号是自己画的小圆圈，去掉浏览器自带的 1. 2. 3. 和缩进 */
-.get-list li { counter-increment: step; position: relative; padding-left: 28px; font-size: 14.5px; line-height: 1.5; opacity: 0.88; text-wrap: pretty; }
-.get-list li::before {
-  content: counter(step); position: absolute; left: 0; top: 2px; width: 19px; height: 19px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--soft);
+.sheet-step.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.sheet-head { display: flex; align-items: center; gap: 12px; }
+.sheet-title { font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+.sheet-text { font-size: 15px; line-height: 1.5; opacity: 0.86; text-wrap: pretty; }   /* pretty：最后一行不留孤零零的一两个字 */
+.sheet-note { font-size: 13px; color: var(--muted); }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.sheet-actions.one { grid-template-columns: 1fr; }
+.sheet-actions .cap { justify-content: center; padding: 12px 14px; font-size: 15px; }
+.sheet-actions .cap:hover { transform: none; }   /* 玻璃按钮悬停不位移 */
+.sheet-actions .cap:active { transform: scale(0.97); }
+/* 安装教程：玻璃宽一点，图里的字才看得清；右上角是第几步；图是抠掉背景的系统截图（2 倍图，宽高写在 img 上，图没到也先占好位置），投影在这里统一加 */
+.sheet-wide .sheet-panel { width: min(480px, calc(100vw - 32px)); }
+.tut-count { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tut-fig { margin: 2px 0 0; display: flex; justify-content: center; }
+.tut-fig img {   /* 宽用 img 上写的数（不写 auto，不然图没到时量不出高度，玻璃会量矮），太宽就缩，高度按比例；太高就在框里等比缩（contain） */
+  display: block; max-width: 100%; height: auto; max-height: min(44vh, 340px); object-fit: contain;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.16)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
-.get-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-.get-actions.one { grid-template-columns: 1fr; }
-.get-actions .cap { justify-content: center; padding: 12px 14px; font-size: 15px; }
-.get-actions .cap:hover { transform: none; }   /* 玻璃按钮悬停不位移 */
-.get-actions .cap:active { transform: scale(0.97); }
-body.get-open .trail { opacity: 0 !important; pointer-events: none !important; }
+body.sheet-open .trail { opacity: 0 !important; pointer-events: none !important; }
 
 /* ---------- 返回箭头：三个向左的箭头，贴着该层第一个节点的左边，位置由脚本每帧更新 ---------- */
 .back-chevrons {
@@ -562,7 +567,7 @@ body.preview .statebar { display: flex; }
   .bg::after { animation: tint-b 75s ease-in-out infinite alternate; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer, .get-veil, .get-panel, .get-step, .get-sheet.is-shown .get-veil, .get-sheet.is-shown .get-panel { transition: none; }
+  .bubble, .trail, .trail-seg, .trail-label, .credit, .credit-layer, .sheet-veil, .sheet-panel, .sheet-step, .sheet.is-shown .sheet-veil, .sheet.is-shown .sheet-panel { transition: none; }
 }
 @keyframes enter { from { opacity: 0; letter-spacing: 0.04em; filter: blur(8px); } to { opacity: 1; letter-spacing: -0.03em; filter: blur(0); } }
 @keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
