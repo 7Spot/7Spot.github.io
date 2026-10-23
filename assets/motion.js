@@ -818,11 +818,11 @@
   function resetCredit() { creditState = 'a'; layerA.classList.add('is-on'); layerB.classList.remove('is-on'); if (creditSize) applyCreditSize(false); }
 
   // ---------- 获取：一块 Liquid Glass 弹窗，三步在同一块玻璃里变形（获取 → 开发者版本 → 怎么打开）。
-  // 一个 0→1 的进度 get.p 驱动打开 / 收回：从「获取」按钮的位置长出来、字由模糊变清楚、背后变暗变模糊；收回时回到按钮里，随时能反向（和关于一样） ----------
-  var getSheet = document.getElementById('get-sheet'), getVeil = getSheet.querySelector('.get-veil'), getPanel = document.getElementById('get-panel'), getStepsEl = document.getElementById('get-steps');
+  // 打开 / 收回是 CSS 过渡（.is-shown），交给系统合成：Safari 把脚本动画限在 60 帧、逐帧改模糊还要重画，所以这里不逐帧驱动。
+  // 从「获取」按钮的位置长出来、收回到按钮里（--ox / --oy），中途切换浏览器会从当前样子反向 ----------
+  var getSheet = document.getElementById('get-sheet'), getVeil = getSheet.querySelector('.get-veil'), getPanel = document.getElementById('get-panel');
   var getSteps = [].slice.call(getPanel.querySelectorAll('.get-step'));
-  var get = { target: 0, p: 0, from: 0, to: 0, t0: 0, dur: 0, anim: false, shown: false, step: 1, item: null, btn: null, ox: 0, oy: 0 };
-  var GET_OPEN = 460, GET_CLOSE = 320;
+  var get = { target: 0, shown: false, step: 1, item: null, btn: null, hideTimer: null };
   function modal() { return about.target === 1 || get.target === 1; }   // 关于或获取开着：背后不能滑、不能点
   // 数据里没有下载的小东西，「获取」变灰、点不了
   [].forEach.call(document.querySelectorAll('[data-get]'), function (b) { var it = itemById(b.getAttribute('data-get')); if (!it || !it.download) { b.disabled = true; b.classList.add('is-off'); } });
@@ -839,28 +839,29 @@
     getPanel.style.height = h.toFixed(1) + 'px';
     if (instant) { void getPanel.offsetHeight; getPanel.style.transition = ''; }
   }
-  function startGetTween() {
-    get.from = get.p; get.to = get.target; get.t0 = performance.now();
-    get.dur = reduce ? 1 : Math.max(120, (get.target ? GET_OPEN : GET_CLOSE) * Math.abs(get.to - get.from));
-    get.anim = true;
+  // 按钮中心离屏幕中心多远：玻璃收着时就缩在那里（卡片在漂，开和收的时候各量一次）
+  function placeOrigin() {
+    var r = get.btn.getBoundingClientRect();
+    getPanel.style.setProperty('--ox', (r.left + r.width / 2 - window.innerWidth / 2).toFixed(1) + 'px');
+    getPanel.style.setProperty('--oy', (r.top + r.height / 2 - window.innerHeight / 2).toFixed(1) + 'px');
   }
   function openGet(id, btn) {
     var it = itemById(id);
     if (get.target === 1 || !it || !it.download) return;
-    get.item = it; get.btn = btn;
+    get.item = it; get.btn = btn; get.target = 1;
+    clearTimeout(get.hideTimer);
     document.getElementById('get-title').textContent = '获取' + it.title;
     document.getElementById('get-req').textContent = it.download.req + ' · ' + it.download.size;
-    get.target = 1;
     stage.setAttribute('inert', '');
     getVeil.style.pointerEvents = '';
-    if (!get.shown) {   // 从完全关上开始：显示出来，回到第一步
-      get.shown = true; get.p = 0;
+    placeOrigin();
+    if (!get.shown) {   // 从完全关上开始：先以「缩在按钮里、看不见」的样子显示出来、回到第一步，量一次布局，过渡才有起点
+      get.shown = true;
       getSheet.classList.add('is-open'); getSheet.setAttribute('aria-hidden', 'false'); document.body.classList.add('get-open');
       getStepTo(1, true);
+      void getPanel.offsetWidth;
     }
-    var r = btn.getBoundingClientRect();   // 从按钮的位置长出来：记下按钮中心离屏幕中心多远
-    get.ox = r.left + r.width / 2 - window.innerWidth / 2; get.oy = r.top + r.height / 2 - window.innerHeight / 2;
-    startGetTween();
+    getSheet.classList.add('is-shown');
     try { getPanel.focus({ preventScroll: true }); } catch (err) {}
   }
   function closeGet() {
@@ -868,7 +869,15 @@
     get.target = 0;
     stage.removeAttribute('inert');
     getVeil.style.pointerEvents = 'none';   // 收到一半就能点背后的「获取」重开
-    startGetTween();
+    placeOrigin();
+    getSheet.classList.remove('is-shown');
+    clearTimeout(get.hideTimer);
+    get.hideTimer = setTimeout(function () {   // 过渡走完再藏起来，焦点还给「获取」
+      if (get.target === 1) return;
+      get.shown = false;
+      getSheet.classList.remove('is-open'); getSheet.setAttribute('aria-hidden', 'true'); document.body.classList.remove('get-open');
+      if (get.btn) try { get.btn.focus({ preventScroll: true }); } catch (err) {}
+    }, reduce ? 0 : 400);
   }
   // 确定下载：直接下载 GitHub 发行版里的包（服务器让浏览器存成文件，人还留在网站上），然后换到「怎么打开」
   function downloadGet() {
@@ -877,27 +886,6 @@
     getPanel.appendChild(a); a.click(); a.remove();
     getStepTo(3);
   }
-  function getTick(t) {
-    if (!get.shown) return;
-    if (get.anim) {
-      var k = clamp01((t - get.t0) / get.dur);
-      get.p = get.from + (get.to - get.from) * (get.target ? pushEase(k) : easeInOut(k));   // 开：iOS 曲线弹出来；收：缓入缓出
-      if (k >= 1) { get.p = get.to; get.anim = false; }
-    }
-    var p = get.p, q = 1 - p;
-    getVeil.style.opacity = p.toFixed(3);
-    var bf = p > 0.001 ? 'blur(' + (8 * p).toFixed(1) + 'px)' : '';
-    getVeil.style.webkitBackdropFilter = bf; getVeil.style.backdropFilter = bf;
-    getPanel.style.opacity = clamp01(p * 1.8).toFixed(3);
-    getPanel.style.transform = p >= 1 ? '' : 'translate(-50%, -50%) translate3d(' + (get.ox * q).toFixed(1) + 'px,' + (get.oy * q).toFixed(1) + 'px,0) scale(' + (0.3 + 0.7 * p).toFixed(4) + ')';
-    getStepsEl.style.filter = q > 0.01 ? 'blur(' + (8 * q).toFixed(1) + 'px)' : '';   // 字由模糊变清楚（只糊字，不糊玻璃）
-    if (!get.anim && get.p <= 0 && get.target === 0) {   // 完全收回：藏起来，焦点还给「获取」
-      get.shown = false;
-      getSheet.classList.remove('is-open'); getSheet.setAttribute('aria-hidden', 'true'); document.body.classList.remove('get-open');
-      if (get.btn) try { get.btn.focus({ preventScroll: true }); } catch (err) {}
-    }
-  }
-
   // ---------- 球的弹簧：关于的三个球能点（缩一下再弹回来）、能拖（有限位，松手弹回原位）；首页的球能点（缩一下）并用它呼吸。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着。只整体缩放，球永远正圆（作者试过压扁拉长，手机上卡且怪，撤回了） ----------
   var ballPt = null, ballFloats = [];
   function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, hold: false }; }
@@ -1011,7 +999,6 @@
     trailTick(dt);
     // 6. 关于
     aboutTick(t);
-    getTick(t);
     var showAbout = about.shown && about.lp > 0;
     aboutLinks.forEach(function (d) {
       if (!showAbout || !d.a.base || !d.b.base) { d.path.style.display = 'none'; d.dot.style.display = 'none'; return; }
@@ -1027,5 +1014,5 @@
   requestAnimationFrame(tick);
 
   // 调试出口：控制台里看各层位置和当前手势
-  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: get.target, p: +get.p.toFixed(3), step: get.step, shown: get.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
+  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: get.target, step: get.step, shown: get.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
 })();
