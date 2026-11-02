@@ -25,7 +25,7 @@ window.SITE = {
       // os / chip：这个包能在什么设备上用。点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用只支持 M 芯片的 Mac」，
       // 用户可以点「仍要下载」。chip: "arm" = 只支持 M 芯片。以后出 Windows 版怎么加、各浏览器怎么判断，见 CLAUDE.md「下载前的设备判断」
       download: {
-        url: "https://github.com/7Spot/7Spot.github.io/releases/download/v0.5.5-b43/Deskmate-0.5.5-b43.dmg",
+        url: "https://github.com/7Spot/7Spot.github.io/releases/download/v0.5.5-b44/Deskmate-0.5.5-b44.dmg",
         size: "约 43MB",
         req: "需要 M 芯片的 Mac，macOS 12 以上",
         os: "mac",
