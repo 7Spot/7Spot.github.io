@@ -21,6 +21,7 @@ window.SITE = {
       sub: "住在 Mac 桌面上的宠物",
       kind: "Mac 应用",
       status: "developing",
+      icon: "assets/img/DeskMates/icon.webp",   // 图标：小东西层的球、同桌卡片、获取弹窗里用；没有就显示爪印占位
       // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。
       // os / minOS：这个包能在什么设备上用（minOS = 最低的 macOS 大版本号，更新的 macOS 都算能用）。
       // 点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用需要 macOS 26 及以上」，用户可以点「仍要下载」。

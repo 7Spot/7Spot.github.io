@@ -205,6 +205,10 @@ a, button, img, svg { -webkit-user-drag: none; }
 }
 .app-icon svg { position: relative; width: 56%; height: 56%; fill: currentColor; }
 .app-icon.big { width: 76px; height: 76px; box-shadow: 0 0 0 var(--stroke) var(--ink), 0 5px 0 var(--stroke) var(--ink); }
+/* 真图标（图片）：本身就是白底、黑描边的圆角方块，不再套淡蓝的底和描边，只加一样往下错开的硬影子（跟着图标的形状走） */
+.app-icon.app-icon-img { display: block; background: none; box-shadow: none; border-radius: 0; object-fit: contain; filter: drop-shadow(0 3px 0 var(--ink)); }
+.app-icon.app-icon-img.big { filter: drop-shadow(0 5px 0 var(--ink)); }
+.app-icon.app-icon-img[hidden] { display: none; }
 
 /* zzz：造梦、N 天前醒过、还没醒过时出现 */
 .zzz {

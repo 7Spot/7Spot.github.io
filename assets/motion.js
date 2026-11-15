@@ -102,7 +102,7 @@
     w.className = 'item';
     w.innerHTML =
       '<div class="float"><button class="bubble bubble-item" type="button" data-node="item:' + it.id + '" data-shape="circle" data-go="' + it.id + '" aria-label="' + esc(fullTitle(it)) + '">' +
-        '<span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span>' +
+        (it.icon ? '<img class="app-icon app-icon-img" src="' + esc(it.icon) + '" alt="" draggable="false">' : '<span class="app-icon" aria-hidden="true"><svg><use href="#paw"/></svg></span>') +
         '<span class="item-name">' + esc(it.title) + '</span>' +
         '<span class="item-sub">' + esc(it.sub) + '</span>' +
         '<span class="item-meta"><span>' + esc(it.kind || '应用') + '</span><span class="badge" data-item-status="' + it.id + '"></span></span>' +
@@ -963,6 +963,7 @@
     if (openSheet() || !it || !it.download) return;
     getItem = it;
     document.getElementById('get-title').textContent = '获取' + it.title;
+    var gi = document.getElementById('get-icon'); gi.hidden = !it.icon; if (it.icon) gi.src = it.icon;
     document.getElementById('get-req').textContent = it.download.req + ' · ' + it.download.size;
     document.getElementById('get-warn-req').textContent = it.download.req;
     getSheet.open(btn);
