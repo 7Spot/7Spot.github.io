@@ -860,7 +860,7 @@
       sh.fit(instant);
     };
     sh.fit = function (instant) {
-      var s = sh.steps[sh.step - 1], cs = getComputedStyle(sh.panel);
+      var s = sh.steps.filter(function (x) { return +x.dataset.step === sh.step; })[0] || sh.steps[0], cs = getComputedStyle(sh.panel);   // 按 data-step 找，步号可以不连着
       var h = s.offsetHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
       if (instant) sh.panel.style.transition = 'none';
       sh.panel.style.height = h.toFixed(1) + 'px';
