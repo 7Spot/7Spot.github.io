@@ -1,8 +1,11 @@
 # 7Spot
 
-JUN7 的个人网站：https://7spot.github.io
+JUN7 的个人网站，放一些好玩的小东西：https://7spot.github.io
 
-这里放的是网站的源文件。推送到 `main` 分支后，GitHub Pages 会自动发布。
+纯静态网页，不用安装任何东西，双击 `index.html` 就能在本地打开。
 
-- `index.html` 首页
-- `projects/` 各个小程序 / 小组件的介绍页和下载文件（待添加）
+- `index.html`：全站唯一的页面
+- `assets/site-data.js`：内容（小东西、下载链接、开发伙伴）
+- `assets/style.css`：样式
+- `assets/motion.js`：动画和交互
+- `assets/img/`：图片

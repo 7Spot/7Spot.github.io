@@ -532,7 +532,7 @@
     window.addEventListener('pointercancel', up);
   })();
 
-  // 动图到了也量一次（高度是写死的，正常不会动；保险）
+  // 动图加载完再量一次位置（高度是写死的，一般不会变）
   [].forEach.call(document.querySelectorAll('img[data-pet]'), function (im) { im.addEventListener('load', function () { needMeasure = true; }); });
   // 层内滚动、窗口变化、字体加载：重新量位置
   levelList.forEach(function (L) { L.el.addEventListener('scroll', function () { needMeasure = true; }, { passive: true }); });
@@ -568,7 +568,7 @@
   }
 
   // ---------- 节点与连线：端点和气泡用同一组数字 ----------
-  // 线靠屏幕左右边缘的一截淡出：渐变直接用在线条和端点上（以前用遮罩，遮罩每帧都要把一大块重画一遍）
+  // 线靠屏幕左右边缘的一截淡出：渐变直接用在线条和端点上（比遮罩省：遮罩每帧都要重画一大块）
   var svg = document.getElementById('lines'), linesG = document.getElementById('lines-g'), grad = document.getElementById('lineFade');
   function fitFade() { grad.setAttribute('x2', window.innerWidth); var k = Math.min(0.45, 180 / window.innerWidth); var st = grad.querySelectorAll('stop'); st[1].setAttribute('offset', k); st[2].setAttribute('offset', 1 - k); }
   fitFade();
@@ -829,7 +829,7 @@
     var el = document.getElementById(id);
     var sh = { el: el, veil: el.querySelector('.sheet-veil'), panel: el.querySelector('.sheet-panel'), target: 0, shown: false, step: 1, btn: null, hideTimer: null };
     sh.steps = [].slice.call(sh.panel.querySelectorAll('.sheet-step'));
-    // 图加载完再量一次玻璃的高度（保险：图的宽高写在 img 上，正常不会变）
+    // 图加载完再量一次玻璃的高度（图的宽高写在 img 上，一般不会变）
     [].forEach.call(sh.panel.querySelectorAll('img'), function (im) { im.addEventListener('load', function () { if (sh.shown) sh.fit(); }); });
     // 换到第几步：只有这一步能点、能被读屏读到；玻璃的高度过渡到这一步的高度（CSS 0.5s push 曲线），字交叉淡入淡出
     sh.stepTo = function (n, instant) {
@@ -903,13 +903,13 @@
   function modal() { return about.target === 1 || !!openSheet(); }   // 关于或弹窗开着：背后不能滑、不能点
   // 数据里没有下载的小东西，「获取」变灰、点不了
   [].forEach.call(document.querySelectorAll('[data-get]'), function (b) { var it = itemById(b.getAttribute('data-get')); if (!it || !it.download) { b.disabled = true; b.classList.add('is-off'); } });
-  // ---------- 下载前的设备判断（为什么这么判断、各浏览器能判断到哪一步、以后加 Windows 怎么改，见 CLAUDE.md「下载前的设备判断」）----------
+  // ---------- 下载前的设备判断：包和设备对不上就先提醒；判断不了的一律当能用 ----------
   // device.os：mac / windows / ios（iPhone、iPad）/ android / chromeos / linux / other；device.chip：arm（M 芯片）/ x86（Intel）/ null（不知道）
   var device = { os: 'other', chip: null, chipAsked: false };
   (function () {
     var ua = navigator.userAgent, uad = navigator.userAgentData;
     // 1. iPhone / iPad：只有 iOS 上的 WebKit 认 -webkit-touch-callout（所有 iOS 浏览器都是 WebKit）。
-    //    不看触屏：iPad 的 Safari 会把自己报成 Mac，而以后可能有触屏 Mac；Mac 上的 Safari 和 Chrome 都不认这个（2026-10-23 实测）
+    //    不看触屏：iPad 的 Safari 会把自己报成 Mac，而以后可能有触屏 Mac；Mac 上的 Safari 和 Chrome 都不认这个
     if (window.CSS && CSS.supports && CSS.supports('-webkit-touch-callout', 'none')) { device.os = 'ios'; return; }
     // 2. 系统：Chrome 内核的浏览器直接报（userAgentData.platform：macOS / Windows / Android / Chrome OS / Linux），别的浏览器看 navigator.platform（MacIntel / Win32 / Linux…）
     var p = (uad && uad.platform) || navigator.platform || '';
@@ -966,7 +966,7 @@
     getSheet.stepTo(3);
   }
 
-  // ---------- 球的弹簧：关于的三个球能点（缩一下再弹回来）、能拖（有限位，松手弹回原位）；首页的球能点（缩一下）并用它呼吸。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着。只整体缩放，球永远正圆（作者试过压扁拉长，手机上卡且怪，撤回了） ----------
+  // ---------- 球的弹簧：关于的三个球能点（缩一下再弹回来）、能拖（有限位，松手弹回原位）；首页的球能点（缩一下）并用它呼吸。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着。只整体缩放，球永远正圆 ----------
   var ballPt = null, ballFloats = [];
   function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, hold: false }; }
   function resetBalls() { ballFloats.forEach(function (f) { f._d = freshSpring(); }); }

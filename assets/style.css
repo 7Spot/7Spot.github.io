@@ -29,7 +29,7 @@
   --sheet-thick: rgba(0, 0, 0, 0.04); --sheet-shadow: rgba(0, 0, 0, 0.18); --get-veil: rgba(245, 245, 247, 0.4);
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --push: cubic-bezier(0.32, 0.72, 0, 1);   /* 和推层同一条 iOS 曲线：落款胶囊的宽高、获取弹窗换步时的高度（以前这个变量没定义，落款的宽高其实是跳变的） */
+  --push: cubic-bezier(0.32, 0.72, 0, 1);   /* 和推层同一条 iOS 曲线：落款胶囊的宽高、获取弹窗换步时的高度 */
   --gutter: 16px;
   /* 三档尺寸：电脑 */
   --bubble-home: 200px; --bubble-item: 200px; --bubble-about: 210px;   /* 首页的球和同桌球一样大，推层时像一颗换成另一颗 */
@@ -221,8 +221,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 .float { position: relative; will-change: transform; }
 .home-float { width: var(--bubble-home); height: var(--bubble-home); margin: 0; }
 
-/* app 图标（占位：爪印） */
-/* app 图标：和「小东西」按钮同一块玻璃（浅色淡蓝配深色爪印，深色蓝玻璃配白爪印） */
+/* app 图标：和主按钮（.cap-primary）同一块玻璃（浅色淡蓝配深色爪印，深色蓝玻璃配白爪印） */
 .app-icon {
   position: relative; isolation: isolate; display: grid; place-items: center;
   width: 40px; height: 40px; border-radius: 26%;
@@ -259,17 +258,15 @@ a, button, img, svg { -webkit-user-drag: none; }
 .zzz span:nth-child(3) { font-size: 22px; }
 
 /* ---------- 第一层文字 ---------- */
-/* 「7Spot.」：球下面的第一行，大字，正文色（浅色黑、深色白），只有末尾的点是蓝的（点睛色，整站唯一的彩色点，也是站名的点）。
-   不描边、不发光、不渐变、不加影子，靠对比和字距撑住。和「在造梦」连读成一句「7Spot. 在造梦」
-   （作者定的：大字放球上面和球抢中心，放左上角又太远；蓝色实心和蓝玻璃都试过，像水晶字，不高级） */
+/* 「7Spot.」：球下面的第一行大字，正文色（浅色黑、深色白），只有末尾的点是蓝的（整站唯一的彩色点）。和「在造梦」连读成一句「7Spot. 在造梦」 */
 .brand-h { font-size: var(--brand); line-height: 1.05; letter-spacing: -0.03em; color: var(--fg); }
 .brand-h .dot { background: var(--accent); }
 .status-h { font-size: var(--status); font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
-/* 首页动作：入口是球本身（胶囊去掉了）；「关于我」是状态文字下面独立一行的小字链接，不做胶囊 */
+/* 首页动作：入口是球本身；「关于我」是状态文字下面独立一行的小字链接 */
 .actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 22px; }
-/* 胶囊按钮：现在页面上没有在用，样式留给以后的「获取」 */
+/* 胶囊按钮：「安装教程」和弹窗里的按钮；主按钮（.cap-primary）是蓝色 Liquid Glass */
 .cap {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 10px 18px; border-radius: 980px;
@@ -318,11 +315,11 @@ a, button, img, svg { -webkit-user-drag: none; }
 .about-link:hover { color: var(--fg); text-decoration: none; }
 
 /* ---------- 第二层：小东西气泡 ---------- */
-/* 小东西层：同一层的球地位一样，整组在屏幕上下居中（作者定的：不是同桌居中、别的挂下面）。
+/* 小东西层：同一层的球地位一样，整组在屏幕上下居中。
    间距见 --things-gap：两颗时上面那颗正好和首页的球同高。屏幕太矮放不下就整层可滚 */
 .items { display: flex; flex-direction: column; align-items: center; gap: var(--things-gap); }
 .item { display: grid; justify-items: center; }
-/* 球里放全：图标、名字、那句话、种类和状态（作者定的，球下面不挂字） */
+/* 球里放全：图标、名字、那句话、种类和状态 */
 .bubble-item { gap: 0; padding: 16px; }
 .bubble-item .app-icon, .app-icon-slot { width: var(--item-icon); height: var(--item-icon); margin-bottom: 10px; }
 .item-name { position: relative; font-size: var(--item-name); font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
@@ -406,7 +403,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .app-meta h2 { font-size: clamp(28px, 3.6vw, 34px); line-height: 1.1; }
 .app-meta .sub { color: var(--muted); }
 .app-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-/* 「获取」：留给它的蓝色 Liquid Glass 胶囊（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
+/* 「获取」：蓝色 Liquid Glass 胶囊（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
 .app-actions .get-btn { padding: 9px 24px; }
 .get-btn.is-off { color: var(--muted); background: var(--soft); box-shadow: none; text-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: default; }
 .get-btn.is-off::before, .get-btn.is-off::after { display: none; }
@@ -418,7 +415,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .features b { font-weight: 600; }
 .features span { color: var(--muted); font-size: 15px; }
 /* 详情卡里的同桌：头部和功能列表之间一行，动图按高度缩放（两种姿势同一比例尺：趴着 104px、坐着 148px），脚下一道淡影。
-   高度写死，图没到之前位置就留好，卡片不会跳；上边往头部收 14px，让狗头贴近「获取」（作者要的） */
+   高度写死，图没到之前位置就留好，卡片不会跳；上边往头部收 14px，让狗头贴近「获取」 */
 .pet-stage { --pet-h: 104px; --pet-sh: 200px; position: relative; height: var(--pet-h); margin: -14px 0 -6px; display: flex; justify-content: center; }   /* flex 不是 grid：图的 height:100% 要靠容器的定高，grid 的 auto 行算不出来 */
 .pet-stage.is-sit { --pet-h: 148px; --pet-sh: 150px; }
 .pet-stage .pet { position: relative; z-index: 1; display: block; height: 100%; width: auto; pointer-events: none; }
@@ -543,7 +540,7 @@ body[data-level="home"] .trail:not(.is-lingering) { opacity: 0; pointer-events: 
 .trail-label { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
 .trail-label.is-swap { opacity: 0; }
 
-/* ---------- 临时状态按钮 ---------- */
+/* ---------- 预览状态按钮（网址带 ?preview 或 ?state= 才显示） ---------- */
 .statebar {
   position: fixed; top: 14px; right: 14px; z-index: 20;
   display: none; gap: 2px; padding: 4px; border-radius: 980px;

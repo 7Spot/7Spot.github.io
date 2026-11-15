@@ -30,7 +30,7 @@
   <g id="lines-g"></g>
 </svg>
 
-<!-- 爪印图标（占位）与 Liquid Glass 的折射滤镜 -->
+<!-- 爪印图标与 Liquid Glass 的折射滤镜 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <!-- 位移贴图：中心中性灰不动，越靠边越往中心取样，像一块凸透镜 -->
@@ -140,7 +140,7 @@
         <p class="sheet-text">第一次打开会显示：<br><span class="sheet-quote">Apple 无法验证是否包含可能危害 Mac 安全或泄漏隐私的恶意软件</span></p>
         <div class="sheet-actions"><button class="cap" type="button" data-sheet-switch="tut-sheet">安装教程</button><button class="cap cap-primary" type="button" data-sheet-close>完成</button></div>
       </div>
-      <!-- 点「确定下载」时设备不对（不是 Mac / Intel 芯片的 Mac）才会到这一步，标题由脚本按情况填；判断方法见 CLAUDE.md「下载前的设备判断」 -->
+      <!-- 点「确定下载」时设备不对（不是 Mac / Intel 芯片的 Mac）才会到这一步，标题由脚本按情况填 -->
       <div class="sheet-step" data-step="4">
         <h2 class="sheet-title" id="get-warn">此应用只支持 Mac</h2>
         <p class="sheet-text" id="get-warn-req"></p>
@@ -192,7 +192,7 @@
 <!-- 底部：走过的路，一串点（首页不显示）。能点也能左右拖，拖的时候线会被拉长 -->
 <nav class="trail" id="trail" aria-label="路径"><div class="trail-dots" id="trail-dots"></div><span class="trail-label" id="trail-label"></span></nav>
 
-<!-- 临时：预览几种状态，做完拆掉 -->
+<!-- 预览几种状态：网址带 ?preview 或 ?state= 才显示 -->
 <div class="statebar" id="statebar" aria-label="预览状态">
   <button type="button" data-state="today">今天醒过</button>
   <button type="button" data-state="ago3">3 天前醒过</button>

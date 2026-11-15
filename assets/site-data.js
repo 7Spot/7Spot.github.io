@@ -1,14 +1,14 @@
 // 7Spot 的内容数据。加小东西、记发布、开关造梦都改这里，不用碰页面。
 window.SITE = {
-  // 造梦开关：只有作者说「造梦」/「不造梦」才改。开着时首页显示「在造梦」（发布当天除外）。
+  // 造梦开关：开着时首页显示「在造梦」（发布当天除外）。
   dreaming: true,
 
-  // 发布记录：只有作者说「醒了：一句话」才加一条。新的放最上面。
+  // 发布记录：新的放最上面。
   // 发布当天首页显示「今天醒过」，之后「昨天 / 前天 / N 天前醒过」。
   // 格式：{ date: "2026-11-01", item: "deskmate", note: "同桌 1.0 可以下载了" }
   wakes: [],
 
-  // 开发伙伴：关于页落款胶囊点一下显示的名单。同一家的排在一起（新的 Claude 跟在 Claude 后面）。
+  // 开发伙伴：关于页落款胶囊点一下显示的名单。
   credits: ["JUN7", "Claude Fable 5.1", "Claude Opus 5.5", "ChatGPT GPT-6"],
 
   // 小东西。球里显示：图标、title、sub、kind 和状态；首页以外名字都写成「title：sub」。
@@ -23,7 +23,7 @@ window.SITE = {
       status: "developing",
       // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。
       // os / chip：这个包能在什么设备上用。点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用只支持 M 芯片的 Mac」，
-      // 用户可以点「仍要下载」。chip: "arm" = 只支持 M 芯片。以后出 Windows 版怎么加、各浏览器怎么判断，见 CLAUDE.md「下载前的设备判断」
+      // 用户可以点「仍要下载」。chip: "arm" = 只支持 M 芯片。
       download: {
         url: "https://github.com/7Spot/7Spot.github.io/releases/download/v0.5.5-b44/Deskmate-0.5.5-b44.dmg",
         size: "约 43MB",
