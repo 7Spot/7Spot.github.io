@@ -370,7 +370,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 /* ---------- 弹窗（获取、安装教程）：一张卡片，几步在里面变形（高度过渡 + 字交叉淡入淡出）。
    打开 / 收回用 CSS 过渡（交给系统合成，Safari 里也能跑满屏幕刷新率；脚本逐帧画在 Safari 只有 60 帧）：
    .is-shown 加上 / 去掉，卡片从点开它的按钮的位置（--ox / --oy，脚本量好）长出来、缩回去，中途切换就从当前样子反向。
-   只动 transform 和 opacity：背后的模糊程度固定，只淡入淡出 ---------- */
+   只动 transform、opacity 和卡片自己的模糊（filter）：长出来时从模糊到清楚，缩回去时反过来；背后遮罩的模糊程度固定，只淡入淡出 ---------- */
 .sheet { position: fixed; inset: 0; z-index: 14; display: none; touch-action: manipulation; }
 .sheet.is-open { display: block; }
 .sheet-veil {
@@ -386,20 +386,20 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   text-align: left; color: var(--fg); outline: none;
   background: var(--surface);
   box-shadow: 0 0 0 var(--stroke) var(--ink), 0 8px 0 var(--stroke) var(--ink);
-  /* 收着：缩在按钮那里、看不见。收回时先缩、后淡，看得出回到了按钮里 */
-  transform: translate(-50%, -50%) translate3d(var(--ox, 0px), var(--oy, 0px), 0) scale(0.3); opacity: 0;
-  transition: transform 0.32s var(--ease), opacity 0.2s var(--ease) 0.12s, height 0.5s var(--push);
+  /* 收着：缩在按钮那里、模糊、看不见。收回时一边缩一边变模糊，最后才淡掉，看得出回到了按钮里 */
+  transform: translate(-50%, -50%) translate3d(var(--ox, 0px), var(--oy, 0px), 0) scale(0.3); opacity: 0; filter: blur(10px);
+  transition: transform 0.32s var(--ease), opacity 0.2s var(--ease) 0.12s, filter 0.3s var(--ease), height 0.5s var(--push);
   will-change: transform, opacity;
 }
-/* 打开：iOS 曲线弹到屏幕中间，很快就不透明 */
+/* 打开：iOS 曲线弹到屏幕中间，很快就不透明，模糊跟着长大慢慢散掉；停稳后不留滤镜（filter: none），字是清楚的 */
 .sheet.is-shown .sheet-panel {
-  transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(1); opacity: 1;
-  transition: transform 0.46s var(--push), opacity 0.18s var(--ease), height 0.5s var(--push);
+  transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(1); opacity: 1; filter: none;
+  transition: transform 0.46s var(--push), opacity 0.18s var(--ease), filter 0.46s var(--ease), height 0.5s var(--push);
 }
 /* 从一个弹窗切到另一个（获取第三步点「安装教程」）：旧卡片原地淡出、不缩回按钮；背后的遮罩接着用——旧的直接拿掉，新的直接到位，不闪 */
 .sheet.is-leaving { pointer-events: none; }
 .sheet.is-leaving .sheet-veil { opacity: 0; transition: none; }
-.sheet.is-leaving .sheet-panel { opacity: 0; transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(0.96); transition: opacity 0.2s var(--ease), transform 0.2s var(--ease); }
+.sheet.is-leaving .sheet-panel { opacity: 0; filter: blur(8px); transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(0.96); transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), filter 0.2s var(--ease); }
 .sheet.veil-now .sheet-veil { transition: none; }
 .sheet-steps { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
 .sheet-step {   /* 换步：只淡入淡出 + 轻轻上移，放在合成层上（不带模糊，Safari 里模糊过渡要重画） */

@@ -753,6 +753,8 @@
       n.burst._o = { x: ox, y: oy };
       n.burst.style.transform = pi >= 1 ? '' : 'translate3d(' + ox.toFixed(2) + 'px,' + oy.toFixed(2) + 'px,0) scale(' + sc.toFixed(3) + ')';
       n.burst.style.opacity = clamp01(pi * 2.5).toFixed(2);
+      var bl = reduce ? 0 : 12 * (1 - smooth(pi));   // 炸开时从模糊到清楚，收起时一边缩一边变模糊；停稳后不留滤镜，字是清楚的
+      n.burst.style.filter = bl < 0.05 ? '' : 'blur(' + bl.toFixed(2) + 'px)';
     });
     // 遮罩、模糊、背后缩放：开的时候先到位，关的时候跟着进度一起退；限速跟随，中途反向也不跳
     var vt = about.target ? clamp01(el / 450) : smooth(about.p);
