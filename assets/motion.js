@@ -349,13 +349,15 @@
     if (bk) { e.preventDefault(); back(); }
   }, true);
   document.addEventListener('dragstart', function (e) { e.preventDefault(); });
-  // Safari 的双击放大：CSS 的 touch-action 它只认 manipulation / none，这里再兜一层：两次抬手间隔不到 300ms 就拦掉第二次的默认行为
+  // Safari 的双击放大：CSS 的 touch-action 它只认 manipulation / none，这里再兜一层：两次抬手间隔不到 300ms、位置又挨得近（真的双击），才拦掉第二次的默认行为。
+  // 几根手指先后抬起、离得远，不算双击，点击照常
   (function () {
-    var last = 0;
+    var last = 0, lx = 0, ly = 0;
     document.addEventListener('touchend', function (e) {
-      var now = performance.now();
-      if (now - last < 300) e.preventDefault();
-      last = now;
+      var t = e.changedTouches && e.changedTouches[0], now = performance.now();
+      if (!t) return;
+      if (now - last < 300 && Math.hypot(t.clientX - lx, t.clientY - ly) < 40) e.preventDefault();
+      last = now; lx = t.clientX; ly = t.clientY;
     }, { passive: false });
   })();
   document.addEventListener('keydown', function (e) {
@@ -713,7 +715,7 @@
       else history.replaceState({ level: current }, '', hashOf(current));
     }
     about.target = 0;
-    releaseBall(false);   // 正拖着球就放手，球自己弹回原位
+    releaseBall();   // 正拖着的球都放手，各自弹回原位
     stage.removeAttribute('inert');
     aboutVeil.style.pointerEvents = 'none';
     aboutPage.classList.remove('is-settled');
@@ -956,7 +958,7 @@
   }
 
   // ---------- 球的弹簧：关于的三个球能点（缩一下再弹回来）、能拖（有限位，松手弹回原位）；首页的球能点（缩一下）并用它呼吸。位移和缩放都是弹簧，每帧算，线用同一组数字所以始终贴着。只整体缩放，球永远正圆 ----------
-  var ballPt = null, ballFloats = [];
+  var ballPts = {}, ballFloats = [];   // ballPts：按 pointerId 记每根手指（或鼠标）正拖着哪个球，几根手指能同时拖不同的球
   function freshSpring() { return { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, s: 1, vs: 0, ts: 1, hold: false }; }
   function resetBalls() { ballFloats.forEach(function (f) { f._d = freshSpring(); }); }
   aboutNodes.forEach(function (n) { if (n.f && n.el.classList.contains('bubble-about')) { n.f._d = freshSpring(); ballFloats.push(n.f); } });
@@ -974,36 +976,41 @@
     if (Math.abs(d.s - d.ts) < 0.0004 && Math.abs(d.vs) < 0.004) { d.s = d.ts; d.vs = 0; }
   }
   function ballTransform(d) { return d.s === 1 ? '' : ' scale(' + d.s.toFixed(4) + ')'; }
-  function releaseBall(tap) {
-    if (!ballPt) return;
-    var d = ballPt.n.f._d;
-    ballPt.n.el.classList.remove('is-held');
+  // 一根手指松开：这个球弹回原位；tap = 没拖动过，就是点了一下
+  function releasePt(id, tap) {
+    var bp = ballPts[id];
+    if (!bp) return;
+    delete ballPts[id];
+    var d = bp.n.f._d;
+    bp.n.el.classList.remove('is-held');
     d.hold = false; d.tx = 0; d.ty = 0; d.ts = 1;
     if (tap) d.vs -= 1.6;   // 点一下：再往下按一点，弹回来就是 duang
-    ballPt = null;
   }
+  function releaseBall() { Object.keys(ballPts).forEach(function (id) { releasePt(id, false); }); }   // 关于收起时：所有正拖着的球都放手
+  function heldBy(n) { for (var id in ballPts) if (ballPts[id].n === n) return true; return false; }
   aboutNodes.forEach(function (n) {
     if (!n.f || !n.f._d) return;
     n.el.addEventListener('pointerdown', function (e) {
-      if (about.target !== 1 || e.button !== 0 || ballPt) return;
+      if (about.target !== 1 || e.button !== 0 || heldBy(n)) return;   // 同一个球只认第一根按上去的手指
       var d = n.f._d;
-      ballPt = { id: e.pointerId, n: n, x0: e.clientX, y0: e.clientY, gx: d.x, gy: d.y, moved: false };   // 从它现在的位置接着拖，正在弹也不跳
+      ballPts[e.pointerId] = { n: n, x0: e.clientX, y0: e.clientY, gx: d.x, gy: d.y, moved: false };   // 从它现在的位置接着拖，正在弹也不跳
       try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
       d.hold = true; d.ts = 0.96;   // 按下去：先缩一点
       n.el.classList.add('is-held');
     });
   });
   window.addEventListener('pointermove', function (e) {
-    if (!ballPt || e.pointerId !== ballPt.id) return;
-    var dx = e.clientX - ballPt.x0, dy = e.clientY - ballPt.y0, d = ballPt.n.f._d;
-    if (!ballPt.moved) { if (Math.hypot(dx, dy) < 3) return; ballPt.moved = true; d.ts = 1.04; }   // 开始拖：抬起来一点
+    var bp = ballPts[e.pointerId];
+    if (!bp) return;
+    var dx = e.clientX - bp.x0, dy = e.clientY - bp.y0, d = bp.n.f._d;
+    if (!bp.moved) { if (Math.hypot(dx, dy) < 3) return; bp.moved = true; d.ts = 1.04; }   // 开始拖：抬起来一点
     // 限位：离原位越远越拉不动，最远不超过球直径的 0.45 倍
-    var rx = ballPt.gx + dx, ry = ballPt.gy + dy, len = Math.hypot(rx, ry), max = (ballPt.n.base ? ballPt.n.base.w : 200) * 0.45;
+    var rx = bp.gx + dx, ry = bp.gy + dy, len = Math.hypot(rx, ry), max = (bp.n.base ? bp.n.base.w : 200) * 0.45;
     var k = len > 0.01 ? max * Math.tanh(len / max) / len : 0;
     d.tx = rx * k; d.ty = ry * k;
   });
-  window.addEventListener('pointerup', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(!ballPt.moved); });
-  window.addEventListener('pointercancel', function (e) { if (ballPt && e.pointerId === ballPt.id) releaseBall(false); });
+  window.addEventListener('pointerup', function (e) { var bp = ballPts[e.pointerId]; if (bp) releasePt(e.pointerId, !bp.moved); });
+  window.addEventListener('pointercancel', function (e) { releasePt(e.pointerId, false); });
 
   // 按一下会弹的球：按下缩到 0.96、松手弹回来（kick 是弹回来时多给的那一下）。
   // 首页的球（随后的 click 推到小东西层；呼吸 ±1.25%、8s 一轮也由弹簧目标做，不用 CSS 动画，两套缩放不打架）、「更多小东西」（不跳转，只弹一下）

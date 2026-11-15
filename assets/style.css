@@ -280,7 +280,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 .badge[hidden] { display: none; }
 
 /* ---------- 关于：独立的一页，炸开 ---------- */
-.about-page { position: fixed; inset: 0; z-index: 12; display: none; touch-action: manipulation; }
+.about-page { position: fixed; inset: 0; z-index: 12; display: none; touch-action: none; }   /* 不让双指缩放整页：几根手指同时拖球时，页面不会被放大 */
 .about-page.is-open { display: block; }
 .about-veil { position: absolute; inset: 0; background: var(--veil); opacity: 0; will-change: opacity; }
 .stage { transform-origin: 50% 50%; }
