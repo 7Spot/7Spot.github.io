@@ -32,7 +32,7 @@
   --item-icon: 40px; --item-name: 19px; --item-meta: 11.5px;   /* 小东西球里：图标、名字、种类和状态（那句话用 --text-bubble） */
   --level-pad: 72px 64px 100px; --level-pad-sym: 72px 64px;   /* 球在中线上的层用对称内边距 */
   --lift: 132px;   /* 球心比屏幕中线高多少：首页球下面还挂着名字、状态和「关于我」，提这么多整组的重心才在正中 */
-  --things-gap: calc(var(--lift) * 2 - var(--bubble-item));   /* 小东西层球与球的间距（64 / 62 / 70）：两颗整组居中时，上面那颗正好和首页的球同高，线是平的 */
+  --things-gap: calc(var(--lift) * 2 - var(--bubble-item));   /* 小东西层球与球的间距（电脑 64 / iPad 62，手机另写）：两颗整组居中时，上面那颗正好和首页的球同高，线是平的 */
   --about-r: 230px; --about-kx: 1.05; --credit-ky: 1.32;
   color-scheme: light;
 }
@@ -49,12 +49,13 @@
 }
 @media (max-width: 600px) {
   :root {
-    --bubble-home: 150px; --bubble-item: 150px; --bubble-about: 150px;
+    --bubble-home: 176px; --bubble-item: 176px; --bubble-about: 150px;   /* 和 iPad 一样大：再小，小东西球里最下面那行（种类和状态）就放不进圆里 */
     --brand: 56px; --status: 24px; --card-w: 92vw;
     --text-bubble: 12px; --text-about: 13.5px;
     --item-icon: 34px; --item-name: 15px; --item-meta: 11px;
     --level-pad: 64px 16px 92px; --level-pad-sym: 64px 16px;
     --lift: 110px;
+    --things-gap: 62px;   /* 按公式只有 44px，两颗球各自漂浮（最多 ±24px）会碰到，所以写死；上面那颗因此比首页的球高 9px，线几乎是平的 */
     --about-r: 140px; --about-kx: 0.7; --credit-ky: 1.55;
     --stroke: 2px; --drop: 5px;
   }
