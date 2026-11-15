@@ -5,7 +5,7 @@ window.SITE = {
 
   // 发布记录：新的放最上面。
   // 发布当天首页显示「今天醒过」，之后「昨天 / 前天 / N 天前醒过」。
-  // 格式：{ date: "2026-11-01", item: "deskmate", note: "同桌 1.0 可以下载了" }
+  // 格式：{ date: "2026-11-01", item: "DeskMates", note: "同桌 1.0 可以下载了" }
   wakes: [],
 
   // 开发伙伴：关于页落款胶囊点一下显示的名单。同一家的放在一个列表里，组内用逗号隔开，组和组之间用 · 隔开。
@@ -15,7 +15,7 @@ window.SITE = {
   // status：developing 造梦中 / released 已发布
   items: [
     {
-      id: "deskmate",
+      id: "DeskMates",
       no: "01",
       title: "同桌",
       sub: "你的桌面宠物",
