@@ -230,6 +230,9 @@ a, button, img, svg { -webkit-user-drag: none; }
 .status-h { font-size: var(--status); font-weight: 600; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
+/* 首页状态小字里能点的那一行（直达那样小东西）：还是灰字，右边一个「›」，悬停变成正文色 */
+.status-link { color: inherit; }
+.status-link:hover { color: var(--fg); text-decoration: none; }
 /* 首页动作：「关于我」是状态文字下面独立一行的小字链接 */
 .actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 22px; }
 /* 胶囊按钮：白底描边；主按钮（.cap-primary）是淡蓝底 */

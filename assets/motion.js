@@ -48,15 +48,27 @@
     return siteState();
   }
   var S = null;
+  // 首页状态小字：说的是某样小东西时，整行连同右边的「›」能点，直接去那样小东西那一层
+  function setStatusP(text, item) {
+    var p = document.getElementById('status-p');
+    p.textContent = '';
+    if (!item || !document.querySelector('.level[data-level="' + item.id + '"]')) { p.textContent = text; return; }
+    var a = document.createElement('a');
+    a.className = 'status-link'; a.href = '#' + item.id.toLowerCase(); a.setAttribute('data-go', item.id); a.setAttribute('draggable', 'false');
+    a.textContent = text;
+    var c = document.createElement('span'); c.className = 'chev'; c.setAttribute('aria-hidden', 'true'); c.textContent = '›';
+    a.appendChild(c);
+    p.appendChild(a);
+  }
   function applyState(next) {
     S = next;
     document.body.classList.remove('state-today', 'state-dreaming', 'state-ago', 'state-never');
     document.body.classList.add('state-' + S.kind);
-    var h = document.getElementById('status-h'), p = document.getElementById('status-p');
-    if (S.kind === 'today') { h.textContent = '今天醒过'; p.textContent = S.wake.note; }
-    else if (S.kind === 'dreaming') { h.textContent = '在造梦'; p.textContent = '正在开发：「' + (S.item ? S.item.title : '小东西') + '」'; }
-    else if (S.kind === 'ago') { h.textContent = dayWord(S.days) + '醒过'; p.textContent = '也许有可能大概现在睡着了'; }
-    else { h.textContent = '还没醒过'; p.textContent = '也许有可能大概一直在睡'; }
+    var h = document.getElementById('status-h');
+    if (S.kind === 'today') { h.textContent = '今天醒过'; setStatusP(S.wake.note, S.item); }
+    else if (S.kind === 'dreaming') { h.textContent = '在造梦'; setStatusP('正在开发：「' + (S.item ? S.item.title : '小东西') + '」', S.item); }
+    else if (S.kind === 'ago') { h.textContent = dayWord(S.days) + '醒过'; setStatusP('也许有可能大概现在睡着了'); }
+    else { h.textContent = '还没醒过'; setStatusP('也许有可能大概一直在睡'); }
 
     // 小东西徽标：造梦中 / 今天醒过 / 昨天醒过 / N 天前醒过；没有就不显示
     var badges = document.querySelectorAll('[data-item-status]');
@@ -196,6 +208,7 @@
     var path = pathOf(target);
     levelList.forEach(function (L) {
       var to = L.name === target ? 0 : path.indexOf(L.name) >= 0 ? -1 : 1;
+      if (!instant && to === -1 && L.x >= 0.999) { L.x = -1; L.anim = false; return; }   // 被跳过的中间层（首页直达同桌时的小东西层）：在右边等着的直接放到左边，不从屏幕上扫过去
       if (instant) { L.x = to; L.anim = false; } else tween(L, to, v);
     });
   }
