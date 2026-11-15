@@ -358,13 +358,35 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .pet-stage .pet { position: relative; z-index: 1; display: block; height: 100%; width: auto; pointer-events: none; }
 .pet-shadow { position: absolute; left: 50%; bottom: 4px; width: var(--pet-sh); height: 14px; transform: translateX(-50%); border-radius: 50%; background: var(--pet-shadow); }
 .req { color: var(--muted); font-size: 14px; }
-.status-line { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
 @media (max-width: 600px) {
   .app-head { gap: 14px; }
   .app-icon.big { width: 64px; height: 64px; }
   .pet-stage { --pet-h: 92px; --pet-sh: 176px; }
   .pet-stage.is-sit { --pet-h: 131px; --pet-sh: 132px; }
   .features li { grid-template-columns: 5.5em 1fr; gap: 12px; }
+}
+
+/* 「详细介绍 ›」：紧贴在系统要求下面 */
+.more-row { display: flex; margin-top: -8px; }
+
+/* ---------- 第四层：详细介绍。卡片最高一屏，内容在卡片里上下滚，所以连线和返回箭头一直贴着卡片 ---------- */
+.more-card { display: flex; flex-direction: column; gap: 14px; text-align: left; max-height: calc(100vh - 190px); max-height: calc(100dvh - 190px); padding-bottom: 6px; }
+.more-head { display: grid; gap: 2px; }
+.more-head h2 { font-size: clamp(24px, 3vw, 28px); line-height: 1.15; }
+.more-head .sub { color: var(--muted); }
+.more-body {   /* 滚动区伸到卡片两边，滚动条贴着卡片边；上下两头淡出，看得出还有内容 */
+  overflow-y: auto; overscroll-behavior: contain; margin: 0 -36px; padding: 6px 36px 28px;
+  display: grid; gap: 24px; align-content: start;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 28px), transparent);
+}
+.more-sec h3 { font-size: 17px; line-height: 1.3; margin-bottom: 8px; }
+.more-sec ul { display: grid; gap: 8px; }
+.more-sec li { position: relative; padding-left: 16px; font-size: 15px; line-height: 1.6; color: var(--fg); opacity: 0.86; }
+.more-sec li::before { content: ""; position: absolute; left: 1px; top: 0.66em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+@media (max-width: 600px) {
+  .more-card { max-height: calc(100vh - 170px); max-height: calc(100dvh - 170px); }
+  .more-body { margin: 0 -22px; padding: 6px 22px 24px; }
 }
 
 /* ---------- 弹窗（获取、安装教程）：一张卡片，几步在里面变形（高度过渡 + 字交叉淡入淡出）。

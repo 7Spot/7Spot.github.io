@@ -121,6 +121,15 @@
       '</div></div>';
     itemsEl.appendChild(mw);
   }
+  // 详细介绍：从数据生成，每段一个小标题和几条
+  [].forEach.call(document.querySelectorAll('[data-details]'), function (box) {
+    var it = itemById(box.getAttribute('data-details'));
+    if (!it || !it.details) return;
+    box.innerHTML = it.details.map(function (sec) {
+      return '<section class="more-sec"><h3>' + esc(sec.title) + '</h3><ul>' +
+        sec.points.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul></section>';
+    }).join('');
+  });
 
   // ---------- 层级：位置全在脚本手里 ----------
   var stage = document.getElementById('stage');

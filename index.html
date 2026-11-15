@@ -90,7 +90,20 @@
             <li><b>灵动交互</b><span>每只小动物都有不一样的性格</span></li>
           </ul>
           <p class="req">需要Apple Silicon, macOS 26 及以上</p>
-          <p class="status-line"><span class="badge" data-item-status="DeskMates"></span><span>没有在开发就是睡着了</span></p>
+          <div class="more-row"><button class="cap more-btn" type="button" data-go="DeskMates-details" draggable="false">详细介绍<span class="chev" aria-hidden="true">›</span></button></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 第四层：同桌的详细介绍（内容在 site-data.js 的 details 里，由脚本填进来；卡片不超过一屏高，内容在卡片里上下滚） -->
+  <section class="level" data-level="DeskMates-details" data-title="详细介绍" data-parent="DeskMates" data-parent-node='[data-node="DeskMates"]'>
+    <button class="back-chevrons" type="button" data-back aria-label="返回上一层"><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg><svg viewBox="0 0 10 16"><path d="M8 2 2 8l6 6"/></svg></button>
+    <div class="level-in">
+      <div class="float">
+        <article class="glass more-card" data-node="DeskMates-details" data-shape="rect">
+          <header class="more-head"><h2>详细介绍</h2><p class="sub">同桌 DeskMates</p></header>
+          <div class="more-body" data-details="DeskMates"></div>
         </article>
       </div>
     </div>
