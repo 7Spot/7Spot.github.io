@@ -6,9 +6,6 @@
   var params = new URLSearchParams(location.search);
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var TAU = Math.PI * 2;
-  // Safari 的 backdrop-filter 不认 SVG 滤镜，Liquid Glass 退回普通毛玻璃
-  var ua = navigator.userAgent;
-  if (/Safari\//.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS/.test(ua)) root.classList.add('no-refract');
 
   // 调试：?theme=dark|light
   var theme = params.get('theme');
@@ -824,16 +821,16 @@
   function flipCredit() { creditState = creditState === 'a' ? 'b' : 'a'; applyCreditSize(true); }
   function resetCredit() { creditState = 'a'; layerA.classList.add('is-on'); layerB.classList.remove('is-on'); if (creditSize) applyCreditSize(false); }
 
-  // ---------- 弹窗（获取、安装教程）：一块 Liquid Glass，几步在同一块玻璃里变形（高度过渡 + 字交叉淡入淡出）。
+  // ---------- 弹窗（获取、安装教程）：一张卡片，几步在里面变形（高度过渡 + 字交叉淡入淡出）。
   // 打开 / 收回是 CSS 过渡（.is-shown），交给系统合成：Safari 把脚本动画限在 60 帧、逐帧改模糊还要重画，所以这里不逐帧驱动。
   // 从点开它的按钮那里长出来、收回到按钮里（--ox / --oy），中途切换浏览器会从当前样子反向 ----------
   function makeSheet(id) {
     var el = document.getElementById(id);
     var sh = { el: el, veil: el.querySelector('.sheet-veil'), panel: el.querySelector('.sheet-panel'), target: 0, shown: false, step: 1, btn: null, hideTimer: null };
     sh.steps = [].slice.call(sh.panel.querySelectorAll('.sheet-step'));
-    // 图加载完再量一次玻璃的高度（图的宽高写在 img 上，一般不会变）
+    // 图加载完再量一次卡片的高度（图的宽高写在 img 上，一般不会变）
     [].forEach.call(sh.panel.querySelectorAll('img'), function (im) { im.addEventListener('load', function () { if (sh.shown) sh.fit(); }); });
-    // 换到第几步：只有这一步能点、能被读屏读到；玻璃的高度过渡到这一步的高度（CSS 0.5s push 曲线），字交叉淡入淡出
+    // 换到第几步：只有这一步能点、能被读屏读到；卡片的高度过渡到这一步的高度（CSS 0.5s push 曲线），字交叉淡入淡出
     sh.stepTo = function (n, instant) {
       sh.step = n;
       sh.steps.forEach(function (s) { var on = +s.dataset.step === n; s.classList.toggle('is-on', on); s.setAttribute('aria-hidden', on ? 'false' : 'true'); s.inert = !on; });
@@ -846,7 +843,7 @@
       sh.panel.style.height = h.toFixed(1) + 'px';
       if (instant) { void sh.panel.offsetHeight; sh.panel.style.transition = ''; }
     };
-    // 按钮中心离屏幕中心多远：玻璃收着时就缩在那里（卡片在漂，开和收的时候各量一次）
+    // 按钮中心离屏幕中心多远：弹窗收着时就缩在那里（按钮所在的详情卡在漂，开和收的时候各量一次）
     sh.place = function () {
       var r = sh.btn.getBoundingClientRect();
       sh.panel.style.setProperty('--ox', (r.left + r.width / 2 - window.innerWidth / 2).toFixed(1) + 'px');
@@ -889,7 +886,7 @@
     return sh;
   }
   var getSheet = makeSheet('get-sheet'), tutSheet = makeSheet('tut-sheet'), sheets = [getSheet, tutSheet], getItem = null;
-  // 从一个弹窗切到另一个（获取第三步的「安装教程」）：旧玻璃原地淡出，新玻璃从点的那颗按钮长出来；背后的遮罩接着用，不闪
+  // 从一个弹窗切到另一个（获取第三步的「安装教程」）：旧弹窗原地淡出，新弹窗从点的那颗按钮长出来；背后的遮罩接着用，不闪
   function switchSheet(from, to, btn) {
     to.el.classList.add('veil-now');
     from.el.classList.add('is-leaving');

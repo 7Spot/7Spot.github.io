@@ -6,8 +6,8 @@
   <title>7Spot</title>
   <meta name="description" content="7Spot，JUN7 做的小东西都放在这里。">
   <meta name="author" content="JUN7">
-  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f7f4ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#181a21" media="(prefers-color-scheme: dark)">
   <link id="favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%238e8e93'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/style.css">
   <script src="assets/site-data.js"></script>
@@ -30,15 +30,8 @@
   <g id="lines-g"></g>
 </svg>
 
-<!-- 爪印图标与 Liquid Glass 的折射滤镜 -->
+<!-- 爪印图标 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <!-- 位移贴图：中心中性灰不动，越靠边越往中心取样，像一块凸透镜 -->
-    <filter id="lg-refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-      <feImage href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><defs><linearGradient id='r' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='%23ff0000'/><stop offset='1' stop-color='%23000000'/></linearGradient><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%2300ff00'/><stop offset='1' stop-color='%23000000'/></linearGradient><radialGradient id='c'><stop offset='0' stop-color='%23808080'/><stop offset='0.55' stop-color='%23808080'/><stop offset='1' stop-color='%23808080' stop-opacity='0'/></radialGradient></defs><rect width='256' height='256' fill='url(%23r)'/><rect width='256' height='256' fill='url(%23g)' style='mix-blend-mode:screen'/><rect width='256' height='256' fill='url(%23c)'/></svg>" preserveAspectRatio="none" result="map"/>
-      <feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
   <symbol id="paw" viewBox="0 0 24 24">
     <ellipse cx="6.6" cy="9" rx="2.1" ry="2.7"/>
     <ellipse cx="12" cy="6.8" rx="2.2" ry="2.8"/>
@@ -119,7 +112,7 @@
   </div>
 </section>
 
-<!-- 弹窗（获取、安装教程）：一块 Liquid Glass，几步在同一块玻璃里变形。从点开它的按钮那里长出来，收回去也回到按钮里 -->
+<!-- 弹窗（获取、安装教程）：一张卡片，几步在里面变形。从点开它的按钮那里长出来，收回去也回到按钮里 -->
 <section class="sheet" id="get-sheet" aria-hidden="true">
   <div class="sheet-veil" data-sheet-close></div>
   <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="get-title" tabindex="-1">
@@ -150,7 +143,7 @@
   </div>
 </section>
 
-<!-- 安装教程：同一种玻璃，一步一页。第一次打开会被系统拦住，一直讲到「仍要打开」。图是系统弹窗和设置的截图，按圆角抠掉了背景 -->
+<!-- 安装教程：同一种卡片，一步一页。第一次打开会被系统拦住，一直讲到「仍要打开」。图是系统弹窗和设置的截图，按圆角抠掉了背景 -->
 <section class="sheet sheet-wide" id="tut-sheet" aria-hidden="true">
   <div class="sheet-veil" data-sheet-close></div>
   <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="安装教程" tabindex="-1">

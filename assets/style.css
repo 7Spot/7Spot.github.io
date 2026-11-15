@@ -1,35 +1,29 @@
-/* 7Spot 样式。颜色、三档尺寸、动效参数都在 :root 里，改这里就行。 */
+/* 7Spot 样式。颜色、三档尺寸、动效参数都在 :root 里。
+   风格：简约卡通。平涂颜色、深色描边、往下错开的硬影子；描边和影子都用 box-shadow 画，不占位置。 */
 
 :root {
-  --bg: #f5f5f7;
-  --bg-a: #ffffff;
-  --bg-b: #e9ebf0;
-  --fg: #1d1d1f;
-  --muted: #6e6e73;
+  --bg: #f7f4ec; --bg-a: #fffdf8; --bg-b: #ece8de;   /* 背景渐变：左上最亮，往外渐暗 */
+  --fg: #1f2230;
+  --ink: #1f2230;   /* 描边和硬影子 */
+  --muted: #6c6f7a;
   --accent: #0a84ff;
   --dot: var(--fg);
-  --line: rgba(0, 0, 0, 0.08);
-  --soft: rgba(0, 0, 0, 0.05);
-  --link-line: rgba(0, 0, 0, 0.3);
-  --glass: rgba(255, 255, 255, 0.45);
-  --glass-line: rgba(0, 0, 0, 0.07);
-  --glass-hi: rgba(255, 255, 255, 0.95);
-  --glass-shadow: rgba(0, 0, 0, 0.14);
-  --bubble-bg: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.35) 55%, rgba(190, 196, 208, 0.45) 100%);
-  --speck: rgba(10, 132, 255, 0.85);
-  --speck-glow: rgba(10, 132, 255, 0.6);
-  --tint-a: rgba(10, 132, 255, 0.10);
-  --tint-b: rgba(255, 149, 0, 0.08);
-  --lg-a: rgba(96, 172, 255, 0.34); --lg-b: rgba(10, 132, 255, 0.28); --lg-c: rgba(0, 90, 200, 0.26);
-  --lg-rim-hi: rgba(255, 255, 255, 0.95); --lg-rim-lo: rgba(0, 40, 110, 0.16);
-  --lg-spec: rgba(255, 255, 255, 0.95); --lg-thick: rgba(0, 30, 90, 0.1);
-  --lg-text: var(--fg); --lg-text-shadow: none; --lg-shadow: rgba(10, 132, 255, 0.18);
-  --pet-shadow: rgba(0, 0, 0, 0.16);   /* 详情卡里同桌脚下的影子 */
-  --sheet-a: rgba(255, 255, 255, 0.62); --sheet-b: rgba(255, 255, 255, 0.36); --sheet-rim-lo: rgba(0, 0, 0, 0.08);   /* 获取弹窗那块玻璃（不带蓝） */
-  --sheet-thick: rgba(0, 0, 0, 0.04); --sheet-shadow: rgba(0, 0, 0, 0.18); --get-veil: rgba(245, 245, 247, 0.4);
+  --line: rgba(31, 34, 48, 0.12);
+  --soft: rgba(31, 34, 48, 0.06);
+  --link-line: rgba(31, 34, 48, 0.72);
+  --surface: #ffffff;          /* 球、卡片、按钮的底色 */
+  --surface-shade: #ebe8df;    /* 球右下角那一块平涂的暗面 */
+  --primary: #bcdcff; --primary-hover: #a9d2ff; --primary-text: var(--fg);   /* 主按钮和 app 图标 */
+  --stroke: 2.5px;             /* 描边粗细 */
+  --drop: 6px;                 /* 硬影子往下错开多少 */
+  --speck: #0a84ff; --speck-2: #ffb81f; --speck-glow: rgba(10, 132, 255, 0.45);
+  --tint-a: rgba(10, 132, 255, 0.10); --tint-b: rgba(255, 149, 0, 0.08);   /* 背景两团淡色的柔光 */
+  --pet-shadow: rgba(31, 34, 48, 0.12);   /* 详情卡里同桌脚下的影子 */
+  --veil: rgba(247, 244, 236, 0.62);
+  --get-veil: rgba(247, 244, 236, 0.45);
   --ease-in: cubic-bezier(0.22, 1, 0.36, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --push: cubic-bezier(0.32, 0.72, 0, 1);   /* 和推层同一条 iOS 曲线：落款胶囊的宽高、获取弹窗换步时的高度 */
+  --push: cubic-bezier(0.32, 0.72, 0, 1);   /* 和推层同一条 iOS 曲线：落款胶囊的宽高、弹窗换步时的高度 */
   --gutter: 16px;
   /* 三档尺寸：电脑 */
   --bubble-home: 200px; --bubble-item: 200px; --bubble-about: 210px;   /* 首页的球和同桌球一样大，推层时像一颗换成另一颗 */
@@ -40,7 +34,6 @@
   --lift: 132px;   /* 球心比屏幕中线高多少：首页球下面还挂着名字、状态和「关于我」，提这么多整组的重心才在正中 */
   --things-gap: calc(var(--lift) * 2 - var(--bubble-item));   /* 小东西层球与球的间距（64 / 62 / 70）：两颗整组居中时，上面那颗正好和首页的球同高，线是平的 */
   --about-r: 230px; --about-kx: 1.05; --credit-ky: 1.32;
-  --veil: rgba(245, 245, 247, 0.62);
   color-scheme: light;
 }
 @media (max-width: 1024px) {
@@ -63,48 +56,35 @@
     --level-pad: 64px 16px 92px; --level-pad-sym: 64px 16px;
     --lift: 110px;
     --about-r: 140px; --about-kx: 0.7; --credit-ky: 1.55;
+    --stroke: 2px; --drop: 5px;
   }
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #000000; --bg-a: #17181c; --bg-b: #000000;
-    --fg: #f5f5f7; --muted: #a1a1a6;
+    --bg: #181a21; --bg-a: #262a35; --bg-b: #111217; --fg: #f2f3f6; --ink: #000000; --muted: #a2a6b2;
     --line: rgba(255, 255, 255, 0.12); --soft: rgba(255, 255, 255, 0.08);
-    --link-line: rgba(255, 255, 255, 0.34);
-    --glass: rgba(255, 255, 255, 0.08); --glass-line: rgba(255, 255, 255, 0.2);
-    --glass-hi: rgba(255, 255, 255, 0.3); --glass-shadow: rgba(0, 0, 0, 0.6);
-    --bubble-bg: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06) 55%, rgba(0, 0, 0, 0.25) 100%);
-    --speck: rgba(255, 255, 255, 0.75); --speck-glow: rgba(255, 255, 255, 0.4);
+    --link-line: rgba(242, 243, 246, 0.55);
+    --surface: #2b2f3a; --surface-shade: #23262f;
+    --primary: #2f86ff; --primary-hover: #4794ff; --primary-text: #ffffff;
+    --speck: #4d9dff; --speck-2: #f0b429; --speck-glow: rgba(77, 157, 255, 0.4);
     --tint-a: rgba(10, 132, 255, 0.16); --tint-b: rgba(255, 149, 0, 0.1);
-    --veil: rgba(0, 0, 0, 0.62);
-    --lg-a: rgba(96, 172, 255, 0.58); --lg-b: rgba(10, 132, 255, 0.5); --lg-c: rgba(0, 90, 200, 0.48);
-    --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
-    --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
-    --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
-    --pet-shadow: rgba(0, 0, 0, 0.5);
-    --sheet-a: rgba(255, 255, 255, 0.16); --sheet-b: rgba(255, 255, 255, 0.06); --sheet-rim-lo: rgba(0, 0, 0, 0.4);
-    --sheet-thick: rgba(0, 0, 0, 0.3); --sheet-shadow: rgba(0, 0, 0, 0.6); --get-veil: rgba(0, 0, 0, 0.45);
+    --pet-shadow: rgba(0, 0, 0, 0.45);
+    --veil: rgba(24, 26, 33, 0.62);
+    --get-veil: rgba(8, 9, 12, 0.5);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #000000; --bg-a: #17181c; --bg-b: #000000;
-  --fg: #f5f5f7; --muted: #a1a1a6;
+  --bg: #181a21; --bg-a: #262a35; --bg-b: #111217; --fg: #f2f3f6; --ink: #000000; --muted: #a2a6b2;
   --line: rgba(255, 255, 255, 0.12); --soft: rgba(255, 255, 255, 0.08);
-  --link-line: rgba(255, 255, 255, 0.34);
-  --glass: rgba(255, 255, 255, 0.08); --glass-line: rgba(255, 255, 255, 0.2);
-  --glass-hi: rgba(255, 255, 255, 0.3); --glass-shadow: rgba(0, 0, 0, 0.6);
-  --bubble-bg: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06) 55%, rgba(0, 0, 0, 0.25) 100%);
-  --speck: rgba(255, 255, 255, 0.75); --speck-glow: rgba(255, 255, 255, 0.4);
+  --link-line: rgba(242, 243, 246, 0.55);
+  --surface: #2b2f3a; --surface-shade: #23262f;
+  --primary: #2f86ff; --primary-hover: #4794ff; --primary-text: #ffffff;
+  --speck: #4d9dff; --speck-2: #f0b429; --speck-glow: rgba(77, 157, 255, 0.4);
   --tint-a: rgba(10, 132, 255, 0.16); --tint-b: rgba(255, 149, 0, 0.1);
-  --veil: rgba(0, 0, 0, 0.62);
-  --lg-a: rgba(96, 172, 255, 0.58); --lg-b: rgba(10, 132, 255, 0.5); --lg-c: rgba(0, 90, 200, 0.48);
-  --lg-rim-hi: rgba(255, 255, 255, 0.6); --lg-rim-lo: rgba(0, 20, 60, 0.45);
-  --lg-spec: rgba(255, 255, 255, 0.55); --lg-thick: rgba(0, 10, 40, 0.45);
-  --lg-text: #ffffff; --lg-text-shadow: 0 1px 2px rgba(0, 40, 110, 0.25); --lg-shadow: rgba(10, 132, 255, 0.35);
-  --pet-shadow: rgba(0, 0, 0, 0.5);
-  --sheet-a: rgba(255, 255, 255, 0.16); --sheet-b: rgba(255, 255, 255, 0.06); --sheet-rim-lo: rgba(0, 0, 0, 0.4);
-  --sheet-thick: rgba(0, 0, 0, 0.3); --sheet-shadow: rgba(0, 0, 0, 0.6); --get-veil: rgba(0, 0, 0, 0.45);
+  --pet-shadow: rgba(0, 0, 0, 0.45);
+  --veil: rgba(24, 26, 33, 0.62);
+  --get-veil: rgba(8, 9, 12, 0.5);
   color-scheme: dark;
 }
 
@@ -123,7 +103,7 @@ body {
 @media (min-width: 1025px) { body { font-size: 19px; } }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
-h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.01em; }
 p { margin: 0; }
 ul { margin: 0; padding: 0; list-style: none; }
 button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -134,7 +114,7 @@ a, button, img, svg { -webkit-user-drag: none; }
   border-radius: 50%; background: var(--dot); vertical-align: baseline;
 }
 
-/* ---------- 背景：渐变 + 两团淡色 + 光点 ---------- */
+/* ---------- 背景：渐变 + 两团淡色的柔光 + 小点和小星星 ---------- */
 .bg {
   position: fixed; inset: -40px; z-index: 0; pointer-events: none;
   background: radial-gradient(120% 90% at 30% 15%, var(--bg-a), var(--bg) 55%, var(--bg-b));
@@ -150,8 +130,12 @@ a, button, img, svg { -webkit-user-drag: none; }
   position: absolute; left: var(--x); top: var(--y);
   width: var(--s); height: var(--s); border-radius: 50%;
   background: var(--speck);
-  box-shadow: 0 0 calc(var(--s) * 3) var(--speck-glow);
   opacity: var(--o);
+}
+.bg i:nth-child(3n) { background: var(--speck-2); }
+.bg i:nth-child(5n) {   /* 每五个里有一个是四角星 */
+  width: calc(var(--s) * 2.6); height: calc(var(--s) * 2.6); border-radius: 0;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
 }
 
 /* ---------- 连线 ---------- */
@@ -159,7 +143,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 /* 靠屏幕左右边缘的一截淡出：渐变 #lineFade 直接当颜色用（端点位置由脚本按屏宽设） */
 #lineFade stop { stop-color: var(--link-line); }
 #lineFade .fade-out { stop-opacity: 0; }
-.lines path { fill: none; stroke: url(#lineFade); stroke-width: 1.25; stroke-linecap: round; }
+.lines path { fill: none; stroke: url(#lineFade); stroke-width: 2.2; stroke-linecap: round; }
 .lines circle { fill: url(#lineFade); }
 
 /* ---------- 层级：一层一层往右推（位移由脚本逐帧驱动） ---------- */
@@ -185,70 +169,48 @@ a, button, img, svg { -webkit-user-drag: none; }
 .home-below .status-h { margin-top: 6px; }   /* 名字和状态贴紧，读成一句 */
 .home-below .status-p { margin-top: 8px; }
 
-/* ---------- 毛玻璃 ---------- */
+/* ---------- 卡通平涂：球、卡片、状态按钮 ---------- */
 .glass, .bubble, .statebar {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid var(--glass-line);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 24px 60px var(--glass-shadow);
+  background: var(--surface);
+  box-shadow: 0 0 0 var(--stroke) var(--ink), 0 var(--drop) 0 var(--stroke) var(--ink);
 }
 .bubble {
   position: relative; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 18px;
-  border-radius: 50%;
-  background: var(--bubble-bg), var(--glass);
-  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -12px 28px rgba(0, 0, 0, 0.06), 0 24px 60px var(--glass-shadow);
+  border: 0; border-radius: 50%;
+  background: radial-gradient(circle at 40% 34%, var(--surface) 0 63%, var(--surface-shade) calc(63% + 0.5px));   /* 右下角一块平涂的暗面，像动画里的球 */
   transition: box-shadow 0.6s var(--ease);
 }
-.bubble::before {
-  content: ""; position: absolute; left: 14%; top: 9%; width: 52%; height: 34%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 40% 35%, var(--glass-hi), rgba(255, 255, 255, 0) 70%);
-  opacity: 0.9; pointer-events: none;
-}
-.bubble-item[data-go]:hover, .bubble-home:hover, .bubble-home.is-held, .bubble-more.is-held { box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -12px 28px rgba(0, 0, 0, 0.06), 0 32px 72px var(--glass-shadow); }
-/* 首页的球：里面写着「看看有什么小东西 ›」，有内容所以可点，是首页唯一的入口；按下缩一点、呼吸都由脚本的弹簧做 */
+.bubble-item[data-go]:hover, .bubble-home:hover, .bubble-home.is-held, .bubble-more.is-held { box-shadow: 0 0 0 var(--stroke) var(--ink), 0 calc(var(--drop) + 3px) 0 var(--stroke) var(--ink); }
+/* 首页的球：里面写着「看看有什么小东西 ›」，是首页唯一的入口；按下缩一点、呼吸都由脚本的弹簧做 */
 .bubble-home { cursor: pointer; }
-.bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+.bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; }
 .bubble-home { width: var(--bubble-home); height: var(--bubble-home); }
 .bubble-item { width: var(--bubble-item); height: var(--bubble-item); }
 /* 关于的球：能按能拖（弹簧在脚本里），按住时影子深一点像被拎起来 */
 .bubble-about { width: var(--bubble-about); height: var(--bubble-about); padding: 22px; touch-action: none; cursor: grab; }
-.bubble-about.is-held { cursor: grabbing; box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -12px 28px rgba(0, 0, 0, 0.06), 0 32px 72px var(--glass-shadow); }
-.bubble-text { position: relative; font-size: var(--text-bubble); line-height: 1.45; max-width: 9.5em; color: var(--fg); opacity: 0.85; }
+.bubble-about.is-held { cursor: grabbing; box-shadow: 0 0 0 var(--stroke) var(--ink), 0 calc(var(--drop) + 3px) 0 var(--stroke) var(--ink); }
+.bubble-text { position: relative; font-size: var(--text-bubble); line-height: 1.45; max-width: 9.5em; color: var(--fg); opacity: 0.9; }
 .bubble-about .bubble-text { font-size: var(--text-about); line-height: 1.7; max-width: 9em; opacity: 0.95; text-align: center; text-wrap: balance; }   /* 关于页不在 .level-in 里，居中要自己写 */
 
 .float { position: relative; will-change: transform; }
 .home-float { width: var(--bubble-home); height: var(--bubble-home); margin: 0; }
 
-/* app 图标：和主按钮（.cap-primary）同一块玻璃（浅色淡蓝配深色爪印，深色蓝玻璃配白爪印） */
+/* app 图标：和主按钮同一种淡蓝（深色模式是蓝底白爪印） */
 .app-icon {
-  position: relative; isolation: isolate; display: grid; place-items: center;
+  position: relative; display: grid; place-items: center;
   width: 40px; height: 40px; border-radius: 26%;
-  color: var(--lg-text);
-  background: linear-gradient(135deg, var(--lg-a), var(--lg-b) 55%, var(--lg-c));
-  -webkit-backdrop-filter: blur(6px) saturate(180%); backdrop-filter: blur(6px) saturate(180%);
-  box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 1px 0 0 rgba(255, 255, 255, 0.35), inset 0 -6px 10px var(--lg-thick), 0 8px 20px var(--lg-shadow);
+  color: var(--primary-text);
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--ink), 0 3px 0 2px var(--ink);
 }
-.app-icon::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
-  background: radial-gradient(70% 60% at 25% 15%, var(--lg-spec), rgba(255, 255, 255, 0) 70%);
-  opacity: 0.8;
-}
-.app-icon::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: linear-gradient(135deg, var(--lg-rim-hi), rgba(255, 255, 255, 0.15) 35%, var(--lg-rim-lo) 65%, rgba(255, 255, 255, 0.55));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
-}
-.app-icon svg { position: relative; width: 56%; height: 56%; fill: currentColor; filter: drop-shadow(0 1px 1px rgba(0, 40, 110, 0.15)); }
-.app-icon.big { width: 76px; height: 76px; box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 1px 0 0 rgba(255, 255, 255, 0.35), inset 0 -10px 16px var(--lg-thick), 0 14px 30px var(--lg-shadow); }
+.app-icon svg { position: relative; width: 56%; height: 56%; fill: currentColor; }
+.app-icon.big { width: 76px; height: 76px; box-shadow: 0 0 0 var(--stroke) var(--ink), 0 5px 0 var(--stroke) var(--ink); }
 
 /* zzz：造梦、N 天前醒过、还没醒过时出现 */
 .zzz {
   position: absolute; left: calc(100% - 22px); top: -4px;
   display: flex; align-items: flex-end; gap: 2px;
-  color: var(--muted); font-weight: 600; line-height: 1;
+  color: var(--muted); font-weight: 800; line-height: 1;
   opacity: 0; transition: opacity 0.8s var(--ease); pointer-events: none;
 }
 .state-dreaming .zzz, .state-ago .zzz, .state-never .zzz { opacity: 1; }
@@ -258,81 +220,59 @@ a, button, img, svg { -webkit-user-drag: none; }
 .zzz span:nth-child(3) { font-size: 22px; }
 
 /* ---------- 第一层文字 ---------- */
-/* 「7Spot.」：球下面的第一行大字，正文色（浅色黑、深色白），只有末尾的点是蓝的（整站唯一的彩色点）。和「在造梦」连读成一句「7Spot. 在造梦」 */
-.brand-h { font-size: var(--brand); line-height: 1.05; letter-spacing: -0.03em; color: var(--fg); }
+/* 「7Spot.」：球下面的第一行大字，正文色，只有末尾的点是蓝的（整站唯一的彩色点）。和「在造梦」连读成一句「7Spot. 在造梦」 */
+.brand-h { font-size: var(--brand); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; color: var(--fg); }
 .brand-h .dot { background: var(--accent); }
-.status-h { font-size: var(--status); font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
+.status-h { font-size: var(--status); font-weight: 600; letter-spacing: -0.01em; margin-top: 4px; }
 .status-p { color: var(--muted); max-width: 32em; }
 .status-p a { white-space: nowrap; }
-/* 首页动作：入口是球本身；「关于我」是状态文字下面独立一行的小字链接 */
+/* 首页动作：「关于我」是状态文字下面独立一行的小字链接 */
 .actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 22px; }
-/* 胶囊按钮：「安装教程」和弹窗里的按钮；主按钮（.cap-primary）是蓝色 Liquid Glass */
+/* 胶囊按钮：白底描边；主按钮（.cap-primary）是淡蓝底 */
 .cap {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 10px 18px; border-radius: 980px;
-  font-size: 15px; font-weight: 500; color: var(--fg); line-height: 1; white-space: nowrap;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid var(--glass-line);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 30px var(--glass-shadow);
+  padding: 10px 18px; border: 0; border-radius: 980px;
+  font-size: 15px; font-weight: 600; color: var(--fg); line-height: 1; white-space: nowrap;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--ink), 0 3px 0 2px var(--ink);
   transition: transform 0.4s var(--ease-in), box-shadow 0.4s var(--ease), opacity 0.3s var(--ease);
 }
-.cap:hover { text-decoration: none; transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--glass-hi), 0 14px 36px var(--glass-shadow); }
+.cap:hover { text-decoration: none; transform: translateY(-1px); box-shadow: 0 0 0 2px var(--ink), 0 4px 0 2px var(--ink); }
 .cap:active { transform: translateY(0); }
 .cap-primary {
-  position: relative; isolation: isolate; color: var(--lg-text); font-weight: 600; padding: 11px 20px;
-  text-shadow: var(--lg-text-shadow);
-  background: linear-gradient(135deg, var(--lg-a), var(--lg-b) 55%, var(--lg-c));
-  border-color: transparent;
-  -webkit-backdrop-filter: url(#lg-refract) blur(6px) saturate(180%);
-  backdrop-filter: url(#lg-refract) blur(6px) saturate(180%);
-  box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 1px 0 0 rgba(255, 255, 255, 0.35), inset 0 -10px 16px var(--lg-thick), 0 14px 34px var(--lg-shadow), 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.4s var(--ease), transform 0.25s var(--ease-in);
+  position: relative; color: var(--primary-text); font-weight: 700; padding: 11px 20px;
+  background: var(--primary);
+  transition: box-shadow 0.4s var(--ease), transform 0.25s var(--ease-in), background-color 0.4s var(--ease);
 }
-.no-refract .cap-primary { -webkit-backdrop-filter: blur(6px) saturate(180%); backdrop-filter: blur(6px) saturate(180%); }
-.cap-primary::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
-  background: radial-gradient(70% 60% at 22% 12%, var(--lg-spec), rgba(255, 255, 255, 0) 70%), linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 45%);
-  opacity: 0.8; transition: opacity 0.4s var(--ease);
-}
-.cap-primary::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: linear-gradient(135deg, var(--lg-rim-hi), rgba(255, 255, 255, 0.15) 35%, var(--lg-rim-lo) 65%, rgba(255, 255, 255, 0.55));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
-}
-/* 悬停：整颗不动，只有高光变亮、影子变深；壳体一动折射里的背景就会和壳体错开 */
-.cap-primary:hover { transform: none; opacity: 1; box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 1px 0 0 rgba(255, 255, 255, 0.35), inset 0 -10px 16px var(--lg-thick), 0 18px 40px var(--lg-shadow), 0 2px 6px rgba(0, 0, 0, 0.08); }
-.cap-primary:hover::before { opacity: 1; }
+.cap-primary:hover { transform: none; opacity: 1; background: var(--primary-hover); box-shadow: 0 0 0 2px var(--ink), 0 4px 0 2px var(--ink); }
 .cap-primary:active { transform: scale(0.97); }
 .chev { font-size: 1.25em; line-height: 0.8; margin-left: 2px; }
 /* 「关于我」：全站唯一的文字链接。灰字，悬停变成正文色，不加下划线；内边距只为了好点 */
 .about-link {
   display: inline-block; padding: 10px 14px;
-  font-size: 14px; font-weight: 500; color: var(--muted); line-height: 1; white-space: nowrap;
+  font-size: 14px; font-weight: 600; color: var(--muted); line-height: 1; white-space: nowrap;
   transition: color 0.3s var(--ease);
 }
 .about-link:hover { color: var(--fg); text-decoration: none; }
 
 /* ---------- 第二层：小东西气泡 ---------- */
-/* 小东西层：同一层的球地位一样，整组在屏幕上下居中。
-   间距见 --things-gap：两颗时上面那颗正好和首页的球同高。屏幕太矮放不下就整层可滚 */
+/* 小东西层：同一层的球地位一样，整组在屏幕上下居中。间距见 --things-gap：两颗时上面那颗正好和首页的球同高。屏幕太矮放不下就整层可滚 */
 .items { display: flex; flex-direction: column; align-items: center; gap: var(--things-gap); }
 .item { display: grid; justify-items: center; }
 /* 球里放全：图标、名字、那句话、种类和状态 */
 .bubble-item { gap: 0; padding: 16px; }
 .bubble-item .app-icon, .app-icon-slot { width: var(--item-icon); height: var(--item-icon); margin-bottom: 10px; }
-.item-name { position: relative; font-size: var(--item-name); font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+.item-name { position: relative; font-size: var(--item-name); font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
 .item-sub { position: relative; margin-top: 2px; font-size: var(--text-bubble); line-height: 1.4; color: var(--muted); }
 .item-meta { position: relative; margin-top: 8px; display: flex; align-items: center; gap: 7px; font-size: var(--item-meta); line-height: 1.3; color: var(--muted); white-space: nowrap; }
 .item-meta .badge { background: none; padding: 0; font-size: inherit; gap: 4px; }   /* 状态在球里不做胶囊，只留那个点 */
 .item-meta .badge::before { width: 5px; height: 5px; }
 /* 更多小东西：虚线的空图标位，意思是这里以后还会有。没有下一层，按下只弹一下（弹簧在脚本里），所以不是手形光标、悬停不变 */
-.app-icon-slot { position: relative; display: block; border-radius: 26%; border: 1.5px dashed var(--muted); opacity: 0.6; }
+.app-icon-slot { position: relative; display: block; border-radius: 26%; border: 2px dashed var(--muted); opacity: 0.7; }
 .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 980px; padding: 3px 9px; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px; font-weight: 500; color: var(--muted);
+  font-size: 13px; font-weight: 600; color: var(--muted);
   background: var(--soft); border-radius: 980px; padding: 4px 10px;
 }
 .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -353,30 +293,28 @@ a, button, img, svg { -webkit-user-drag: none; }
 .about-ball[data-pos="2"] { --ax: calc(var(--about-r) * var(--about-kx) * -1); --ay: calc(var(--about-r) * 0.6); }
 .about-ball[data-pos="3"] { --ax: calc(var(--about-r) * var(--about-kx)); --ay: calc(var(--about-r) * 0.6); }
 .burst { will-change: transform, opacity; opacity: 0; }
-/* 灵光：中心一点亮光炸开 + 一圈涟漪 */
+/* 灵光：中心一团失焦的柔光涨开、散开 */
 .spark { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
 .spark i { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0); border-radius: 50%; opacity: 0; }
 .spark-core { width: 44px; height: 44px; background: radial-gradient(circle, rgba(255, 255, 255, 0.95), var(--speck) 40%, transparent 70%); filter: blur(10px); }
 .spark-halo { width: 180px; height: 180px; background: radial-gradient(circle, var(--speck-glow), transparent 65%); filter: blur(32px); }
 .about-page.is-bursting .spark-core { animation: spark-core 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 .about-page.is-bursting .spark-halo { animation: spark-halo 1.2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
-/* 炸开的碎光 */
+/* 炸开的碎光：平涂的小点 */
 .sparks i {
   position: absolute; left: 50%; top: 50%; width: var(--s); height: var(--s); border-radius: 50%;
-  background: var(--speck); box-shadow: 0 0 calc(var(--s) * 3) var(--speck-glow);
-  filter: blur(0.8px);
+  background: var(--speck);
   opacity: 0; transform: translate(-50%, -50%);
 }
+.sparks i:nth-child(3n) { background: var(--speck-2); }
 .about-page.is-bursting .sparks i { animation: shoot 1s cubic-bezier(0.1, 0.8, 0.2, 1) var(--delay) forwards; }
 .about-credit { position: absolute; left: 50%; top: calc(50% + var(--about-r) * var(--credit-ky)); transform: translate(-50%, -50%); pointer-events: auto; }
 .credit {
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); place-items: center;
-  padding: 10px 18px; border-radius: 980px;
-  font-size: 14px; font-weight: 500; color: var(--fg); line-height: 1.4;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid var(--glass-line);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 30px var(--glass-shadow);
+  padding: 10px 18px; border: 0; border-radius: 980px;
+  font-size: 14px; font-weight: 600; color: var(--fg); line-height: 1.4;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--ink), 0 4px 0 2px var(--ink);
   overflow: hidden; text-align: center;
   transition: width 0.5s var(--push), height 0.5s var(--push);
 }
@@ -391,35 +329,34 @@ a, button, img, svg { -webkit-user-drag: none; }
 @media (max-width: 600px) { .credit { font-size: 12.5px; padding: 9px 14px; } }
 body.about-open .trail { opacity: 0 !important; pointer-events: none !important; }
 .lines-about-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.lines-about-svg path { fill: none; stroke: var(--link-line); stroke-width: 1.25; stroke-linecap: round; stroke-dasharray: 1; }
+.lines-about-svg path { fill: none; stroke: var(--link-line); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1; }
 .lines-about-svg circle { fill: var(--link-line); }
 
-/* ---------- 毛玻璃卡片：详情 ---------- */
-.glass { border-radius: 28px; padding: 32px 36px; width: min(100%, var(--card-w)); }
+/* ---------- 卡片：详情 ---------- */
+.glass { border: 0; border-radius: 28px; padding: 32px 36px; width: min(100%, var(--card-w)); }
 @media (max-width: 600px) { .glass { padding: 26px 22px; border-radius: 24px; } }
 .detail { display: grid; gap: 22px; text-align: left; }
 .app-head { display: flex; align-items: center; gap: 20px; }
 .app-meta { display: grid; gap: 4px; }
 .app-meta h2 { font-size: clamp(28px, 3.6vw, 34px); line-height: 1.1; }
 .app-meta .sub { color: var(--muted); }
-.app-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-/* 「获取」：蓝色 Liquid Glass 胶囊（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
+.app-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+/* 「获取」：淡蓝的主按钮（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
 .app-actions .get-btn { padding: 9px 24px; }
-.get-btn.is-off { color: var(--muted); background: var(--soft); box-shadow: none; text-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; cursor: default; }
-.get-btn.is-off::before, .get-btn.is-off::after { display: none; }
-/* 「安装教程」：「获取」右边的透明玻璃胶囊，和它一样高；悬停不位移 */
+.get-btn.is-off { color: var(--muted); background: var(--soft); box-shadow: 0 0 0 2px var(--line); cursor: default; }
+/* 「安装教程」：「获取」右边的白色胶囊，和它一样高；悬停不位移 */
 .app-actions .tut-btn { padding: 9px 18px; }
 .tut-btn:hover { transform: none; }
-.features li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-top: 1px solid var(--line); }
+.features li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-top: 2px solid var(--line); }
 .features li:first-child { border-top: 0; padding-top: 0; }
-.features b { font-weight: 600; }
+.features b { font-weight: 700; }
 .features span { color: var(--muted); font-size: 15px; }
-/* 详情卡里的同桌：头部和功能列表之间一行，动图按高度缩放（两种姿势同一比例尺：趴着 104px、坐着 148px），脚下一道淡影。
+/* 详情卡里的同桌：头部和功能列表之间一行，动图按高度缩放（两种姿势同一比例尺：趴着 104px、坐着 148px），脚下一块平涂的影子。
    高度写死，图没到之前位置就留好，卡片不会跳；上边往头部收 14px，让狗头贴近「获取」 */
 .pet-stage { --pet-h: 104px; --pet-sh: 200px; position: relative; height: var(--pet-h); margin: -14px 0 -6px; display: flex; justify-content: center; }   /* flex 不是 grid：图的 height:100% 要靠容器的定高，grid 的 auto 行算不出来 */
 .pet-stage.is-sit { --pet-h: 148px; --pet-sh: 150px; }
 .pet-stage .pet { position: relative; z-index: 1; display: block; height: 100%; width: auto; pointer-events: none; }
-.pet-shadow { position: absolute; left: 50%; bottom: 2px; width: var(--pet-sh); height: 16px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at center, var(--pet-shadow), rgba(0, 0, 0, 0) 70%); }
+.pet-shadow { position: absolute; left: 50%; bottom: 4px; width: var(--pet-sh); height: 14px; transform: translateX(-50%); border-radius: 50%; background: var(--pet-shadow); }
 .req { color: var(--muted); font-size: 14px; }
 .status-line { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
 @media (max-width: 600px) {
@@ -430,10 +367,10 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   .features li { grid-template-columns: 5.5em 1fr; gap: 12px; }
 }
 
-/* ---------- 弹窗（获取、安装教程）：Liquid Glass。一块玻璃，几步在里面变形（高度过渡 + 字交叉淡入淡出）。
+/* ---------- 弹窗（获取、安装教程）：一张卡片，几步在里面变形（高度过渡 + 字交叉淡入淡出）。
    打开 / 收回用 CSS 过渡（交给系统合成，Safari 里也能跑满屏幕刷新率；脚本逐帧画在 Safari 只有 60 帧）：
-   .is-shown 加上 / 去掉，玻璃从「获取」按钮的位置（--ox / --oy，脚本量好）长出来、缩回去，中途切换就从当前样子反向。
-   只动 transform 和 opacity，不逐帧改模糊半径（Safari 里改模糊半径要重画，会卡）：背后的模糊程度固定，只淡入淡出 ---------- */
+   .is-shown 加上 / 去掉，卡片从点开它的按钮的位置（--ox / --oy，脚本量好）长出来、缩回去，中途切换就从当前样子反向。
+   只动 transform 和 opacity：背后的模糊程度固定，只淡入淡出 ---------- */
 .sheet { position: fixed; inset: 0; z-index: 14; display: none; touch-action: manipulation; }
 .sheet.is-open { display: block; }
 .sheet-veil {
@@ -443,14 +380,12 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 }
 .sheet.is-shown .sheet-veil { opacity: 1; transition: opacity 0.46s var(--ease-in); }
 .sheet-panel {
-  position: absolute; left: 50%; top: 50%; isolation: isolate; overflow: hidden;
-  width: min(360px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 30px;
+  position: absolute; left: 50%; top: 50%; overflow: hidden;
+  width: min(360px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 28px;
   display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   text-align: left; color: var(--fg); outline: none;
-  background: linear-gradient(160deg, var(--sheet-a), var(--sheet-b));
-  -webkit-backdrop-filter: url(#lg-refract) blur(14px) saturate(180%);   /* Chrome：边缘折射，像一块厚玻璃 */
-  backdrop-filter: url(#lg-refract) blur(14px) saturate(180%);
-  box-shadow: inset 0 1px 0 var(--lg-rim-hi), inset 0 -14px 28px var(--sheet-thick), 0 30px 80px var(--sheet-shadow), 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--surface);
+  box-shadow: 0 0 0 var(--stroke) var(--ink), 0 8px 0 var(--stroke) var(--ink);
   /* 收着：缩在按钮那里、看不见。收回时先缩、后淡，看得出回到了按钮里 */
   transform: translate(-50%, -50%) translate3d(var(--ox, 0px), var(--oy, 0px), 0) scale(0.3); opacity: 0;
   transition: transform 0.32s var(--ease), opacity 0.2s var(--ease) 0.12s, height 0.5s var(--push);
@@ -461,22 +396,11 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
   transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(1); opacity: 1;
   transition: transform 0.46s var(--push), opacity 0.18s var(--ease), height 0.5s var(--push);
 }
-/* 从一个弹窗切到另一个（获取第三步点「安装教程」）：旧玻璃原地淡出、不缩回按钮；背后的遮罩接着用——旧的直接拿掉，新的直接到位，不闪 */
+/* 从一个弹窗切到另一个（获取第三步点「安装教程」）：旧卡片原地淡出、不缩回按钮；背后的遮罩接着用——旧的直接拿掉，新的直接到位，不闪 */
 .sheet.is-leaving { pointer-events: none; }
 .sheet.is-leaving .sheet-veil { opacity: 0; transition: none; }
 .sheet.is-leaving .sheet-panel { opacity: 0; transform: translate(-50%, -50%) translate3d(0px, 0px, 0) scale(0.96); transition: opacity 0.2s var(--ease), transform 0.2s var(--ease); }
 .sheet.veil-now .sheet-veil { transition: none; }
-.no-refract .sheet-panel { -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); }   /* Safari 不认 SVG 滤镜，退回毛玻璃 */
-.sheet-panel::before {   /* 左上的高光 */
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
-  background: radial-gradient(60% 45% at 18% 0%, var(--lg-spec), rgba(255, 255, 255, 0) 70%); opacity: 0.55;
-}
-.sheet-panel::after {   /* 渐变亮边 */
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: linear-gradient(140deg, var(--lg-rim-hi), rgba(255, 255, 255, 0.12) 35%, var(--sheet-rim-lo) 65%, rgba(255, 255, 255, 0.5));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
-}
 .sheet-steps { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
 .sheet-step {   /* 换步：只淡入淡出 + 轻轻上移，放在合成层上（不带模糊，Safari 里模糊过渡要重画） */
   grid-area: 1 / 1; align-self: start; display: grid; gap: 10px;
@@ -486,22 +410,22 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 }
 .sheet-step.is-on { opacity: 1; transform: none; pointer-events: auto; }
 .sheet-head { display: flex; align-items: center; gap: 12px; }
-.sheet-title { font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+.sheet-title { font-size: 20px; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; }
 .sheet-text { font-size: 15px; line-height: 1.5; opacity: 0.86; text-wrap: pretty; }   /* pretty：最后一行不留孤零零的一两个字 */
 .sheet-note { font-size: 13px; color: var(--muted); }
 .sheet-quote { color: var(--muted); }   /* 引用系统弹窗里的原话 */
-.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; padding-bottom: 6px; }   /* 下面留出按钮硬影子的位置 */
 .sheet-actions.one { grid-template-columns: 1fr; }
 .sheet-actions .cap { justify-content: center; padding: 12px 14px; font-size: 15px; }
-.sheet-actions .cap:hover { transform: none; }   /* 玻璃按钮悬停不位移 */
+.sheet-actions .cap:hover { transform: none; }   /* 弹窗里的按钮悬停不位移 */
 .sheet-actions .cap:active { transform: scale(0.97); }
-/* 安装教程：玻璃宽一点，图里的字才看得清；右上角是第几步；图是抠掉背景的系统截图（2 倍图，宽高写在 img 上，图没到也先占好位置），投影在这里统一加 */
+/* 安装教程：卡片宽一点，图里的字才看得清；右上角是第几步；图是抠掉背景的系统截图（2 倍图，宽高写在 img 上，图没到也先占好位置），描边和硬影子在这里统一加 */
 .sheet-wide .sheet-panel { width: min(480px, calc(100vw - 32px)); }
-.tut-count { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.tut-fig { margin: 2px 0 0; display: flex; justify-content: center; }
-.tut-fig img {   /* 宽用 img 上写的数（不写 auto，不然图没到时量不出高度，玻璃会量矮），太宽就缩，高度按比例；太高就在框里等比缩（contain） */
+.tut-count { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tut-fig { margin: 4px 0 6px; display: flex; justify-content: center; }
+.tut-fig img {   /* 宽用 img 上写的数（不写 auto，不然图没到时量不出高度，卡片会量矮），太宽就缩，高度按比例；太高就在框里等比缩（contain） */
   display: block; max-width: 100%; height: auto; max-height: min(44vh, 340px); object-fit: contain;
-  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.16)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(1.5px 0 0 var(--ink)) drop-shadow(-1.5px 0 0 var(--ink)) drop-shadow(0 1.5px 0 var(--ink)) drop-shadow(0 -1.5px 0 var(--ink)) drop-shadow(0 4px 0 var(--ink));
 }
 body.sheet-open .trail { opacity: 0 !important; pointer-events: none !important; }
 
@@ -512,7 +436,7 @@ body.sheet-open .trail { opacity: 0 !important; pointer-events: none !important;
   display: flex; align-items: center; justify-content: center; gap: 3px;
   color: var(--fg); will-change: transform;
 }
-.back-chevrons svg { width: 10px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.3; }
+.back-chevrons svg { width: 10px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.3; }
 .back-chevrons:focus-visible { outline: none; }
 .back-chevrons:focus-visible svg { opacity: 1 !important; }
 
@@ -532,23 +456,24 @@ body[data-level="home"] .trail:not(.is-lingering) { opacity: 0; pointer-events: 
 .trail-seg.is-first { width: 26px; }
 .trail-seg.is-out { width: 0; opacity: 0; pointer-events: none; }
 .trail-dot { position: relative; flex: none; width: 26px; height: 26px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; }
-.trail-dot i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; transition: all 0.5s var(--ease-in); }
-.trail-dot.is-current i { width: 10px; height: 10px; background: var(--fg); border-color: var(--fg); }
+.trail-dot i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; transition: all 0.5s var(--ease-in); }
+.trail-dot.is-current i { width: 11px; height: 11px; background: var(--fg); border-color: var(--fg); }
 .trail-dot:hover i { border-color: var(--fg); }
 .trail-dot:focus-visible { outline: none; } .trail-dot:focus-visible i { box-shadow: 0 0 0 3px var(--soft); }
-.trail-line { flex: none; width: 20px; height: 1px; background: var(--link-line); transform-origin: 0 50%; }
-.trail-label { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
+.trail-line { flex: none; width: 20px; height: 2px; border-radius: 1px; background: var(--link-line); transform-origin: 0 50%; }
+.trail-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
 .trail-label.is-swap { opacity: 0; }
 
 /* ---------- 预览状态按钮（网址带 ?preview 或 ?state= 才显示） ---------- */
 .statebar {
   position: fixed; top: 14px; right: 14px; z-index: 20;
   display: none; gap: 2px; padding: 4px; border-radius: 980px;
+  box-shadow: 0 0 0 2px var(--ink), 0 3px 0 2px var(--ink);
 }
 body.preview .statebar { display: flex; }
 .statebar button {
   border: 0; background: transparent; color: var(--muted);
-  font-size: 12px; font-weight: 500; padding: 6px 11px; border-radius: 980px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 980px; white-space: nowrap;
   transition: background 0.3s var(--ease), color 0.3s var(--ease);
 }
 .statebar button:hover { color: var(--fg); }
