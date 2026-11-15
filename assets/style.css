@@ -369,8 +369,9 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 /* 「详细介绍 ›」：紧贴在系统要求下面 */
 .more-row { display: flex; margin-top: -8px; }
 
-/* ---------- 第四层：详细介绍。卡片最高一屏，内容在卡片里上下滚，所以连线和返回箭头一直贴着卡片 ---------- */
-.more-card { display: flex; flex-direction: column; gap: 14px; text-align: left; max-height: calc(100vh - 190px); max-height: calc(100dvh - 190px); padding-bottom: 6px; }
+/* ---------- 第四层：详细介绍。卡片最高一屏，内容在卡片里上下滚，所以连线和返回箭头一直贴着卡片。
+   宽度写死成卡片宽（--card-w）：不然外面漂浮的那层会被长句子撑宽，卡片贴着它左边放，看起来偏左 ---------- */
+.more-card { width: var(--card-w); max-width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: left; max-height: calc(100vh - 190px); max-height: calc(100dvh - 190px); padding-bottom: 6px; }
 .more-head { display: grid; gap: 2px; }
 .more-head h2 { font-size: clamp(24px, 3vw, 28px); line-height: 1.15; }
 .more-head .sub { color: var(--muted); }
