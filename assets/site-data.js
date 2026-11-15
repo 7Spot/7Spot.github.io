@@ -8,8 +8,8 @@ window.SITE = {
   // 格式：{ date: "2026-11-01", item: "deskmate", note: "同桌 1.0 可以下载了" }
   wakes: [],
 
-  // 开发伙伴：关于页落款胶囊点一下显示的名单。
-  credits: ["JUN7", "Claude Fable 5.1", "Claude Opus 5.5", "ChatGPT GPT-6"],
+  // 开发伙伴：关于页落款胶囊点一下显示的名单。同一家的放在一个列表里，组内用逗号隔开，组和组之间用 · 隔开。
+  credits: ["JUN7", ["Claude Fable 5.2", "Fable 5.1", "Opus 5.5"], ["ChatGPT GPT-6 Astra", "GPT-6.1 Sol"]],
 
   // 小东西。球里显示：图标、title、sub、kind 和状态；首页以外名字都写成「title：sub」。
   // status：developing 造梦中 / released 已发布

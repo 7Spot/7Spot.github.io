@@ -785,8 +785,10 @@
 
   // 落款胶囊：两层文字交叉淡入淡出，尺寸从量好的旧尺寸过渡到新尺寸；每次重开都回到第一句
   var creditBtn = document.getElementById('credit'), layerA = document.getElementById('credit-a'), layerB = document.getElementById('credit-b');
-  // 每个名字整个不拆（手机上折行只在 · 处折，不会把「Claude Opus」和「5.5」拆到两行）
-  layerB.innerHTML = '开发伙伴：' + (site.credits || []).map(function (c) { return '<span class="credit-name">' + esc(c) + '</span>'; }).join(' · ');
+  // 每个名字整个不拆，只在名字之间折行。组内用逗号连，组和组之间用 · 连（· 和前一个名字连在一起，不会落到行首）
+  layerB.innerHTML = '开发伙伴：' + (site.credits || []).map(function (g) {
+    return [].concat(g).map(function (c) { return '<span class="credit-name">' + esc(c) + '</span>'; }).join(', ');
+  }).join(' · ');
   var creditState = 'a', creditSize = null;
   // 折成几行时，把这一层的宽度收到最长那一行：胶囊贴着字，不会左右空一截
   function fitLines(el) {
