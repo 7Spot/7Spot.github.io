@@ -903,8 +903,8 @@
   // 数据里没有下载的小东西，「获取」变灰、点不了
   [].forEach.call(document.querySelectorAll('[data-get]'), function (b) { var it = itemById(b.getAttribute('data-get')); if (!it || !it.download) { b.disabled = true; b.classList.add('is-off'); } });
   // ---------- 下载前的设备判断：包和设备对不上就先提醒；判断不了的一律当能用 ----------
-  // device.os：mac / windows / ios（iPhone、iPad）/ android / chromeos / linux / other；device.chip：arm（M 芯片）/ x86（Intel）/ null（不知道）
-  var device = { os: 'other', chip: null, chipAsked: false };
+  // device.os：mac / windows / ios（iPhone、iPad）/ android / chromeos / linux / other；device.macos：macOS 的大版本号（如 26），null = 不知道
+  var device = { os: 'other', macos: null };
   (function () {
     var ua = navigator.userAgent, uad = navigator.userAgentData;
     // 1. iPhone / iPad：只有 iOS 上的 WebKit 认 -webkit-touch-callout（所有 iOS 浏览器都是 WebKit）。
@@ -917,31 +917,21 @@
     else if (/android/i.test(p) || /Android/.test(ua)) device.os = 'android';
     else if (/cros|chrome os/i.test(p) || /CrOS/.test(ua)) device.os = 'chromeos';
     else if (/linux/i.test(p)) device.os = 'linux';
-    // 3. 芯片只在 Mac 上要：Chrome 内核的浏览器问 architecture（arm = M 芯片，x86 = Intel；页面一打开就问，点下载时早就有了）
+    // 3. macOS 版本：只有 Chrome 内核的浏览器问得到（platformVersion，如 "26.1.0"；页面一打开就问，点下载时早就有了）。
+    //    Safari 和 Firefox 不管什么系统都报 10.15，看不出来，就当不知道。
+    //    macOS 从 15 直接跳到 26，有的程序会把 26 报成 16，所以 16 也当 26 算
     if (device.os === 'mac' && uad && uad.getHighEntropyValues) {
-      device.chipAsked = true;
-      uad.getHighEntropyValues(['architecture']).then(function (v) { if (v.architecture) device.chip = /arm/i.test(v.architecture) ? 'arm' : 'x86'; }).catch(function () {});
+      uad.getHighEntropyValues(['platformVersion']).then(function (v) {
+        var major = parseInt(String(v.platformVersion || ''), 10);
+        if (major >= 10) device.macos = major === 16 ? 26 : major;
+      }).catch(function () {});
     }
   })();
-  // Firefox 不报芯片：看显卡名字（Firefox 报的是简化过的名字，如「Apple M1, or similar」/「Intel(R) Iris(TM) Plus Graphics, or similar」）。
-  // 有 Apple 就是 M 芯片（新款可能只写 Apple GPU，不一定带 M，所以不只认「Apple M」）；有 Intel / AMD / Radeon / NVIDIA 才算 Intel 芯片的 Mac；
-  // 别的、读不到都算不知道。Safari 连显卡名字也藏了（只说 Apple GPU，Intel Mac 上也一样），所以 Safari 的芯片一律不知道、不拦
-  function deviceChip() {
-    if (device.chip || device.chipAsked || device.os !== 'mac' || !/Firefox\//.test(navigator.userAgent)) return device.chip;
-    device.chipAsked = true;
-    try {
-      var gl = document.createElement('canvas').getContext('webgl'), ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
-      var r = gl ? String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '') : '';
-      if (/Apple/i.test(r)) device.chip = 'arm';
-      else if (/Intel|AMD|Radeon|NVIDIA|GeForce/i.test(r)) device.chip = 'x86';
-    } catch (err) {}
-    return device.chip;
-  }
   // 这个包能不能在这台设备上用：能就返回空；不能就返回提醒的标题。不知道的一律当能用（宁可放过，不错拦）
   function deviceMismatch(dl) {
     if (dl.os === 'mac') {
       if (device.os !== 'mac') return '此应用只支持 Mac';
-      if (dl.chip === 'arm' && deviceChip() === 'x86') return '此应用只支持 Apple Silicon 的 Mac';
+      if (dl.minOS && device.macos !== null && device.macos < dl.minOS) return '此应用需要 macOS ' + dl.minOS + ' 及以上';
     }
     return '';
   }
@@ -1093,5 +1083,5 @@
   requestAnimationFrame(tick);
 
   // 调试出口：控制台里看各层位置和当前手势
-  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: getSheet.target, step: getSheet.step, shown: getSheet.shown }, device: { os: device.os, chip: device.chip }, tut: { target: tutSheet.target, step: tutSheet.step, shown: tutSheet.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
+  window.__7spot = { levels: levels, chevrons: chevrons, nodes: nodes, state: function () { return { current: current, drag: !!drag, about: { target: about.target, p: +about.p.toFixed(3), shown: about.shown }, credit: creditState, get: { target: getSheet.target, step: getSheet.step, shown: getSheet.shown }, device: { os: device.os, macos: device.macos }, tut: { target: tutSheet.target, step: tutSheet.step, shown: tutSheet.shown }, lines: linesAlpha.v.toFixed(2), trail: +trailD.v.toFixed(1), visited: Object.keys(visited), next: nextOf(current), x: levelList.map(function (L) { return L.name + ':' + L.x.toFixed(3) + (L.anim ? '*' : ''); }) }; } };
 })();
