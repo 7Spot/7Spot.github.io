@@ -338,8 +338,8 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .detail { display: grid; gap: 22px; text-align: left; }
 .app-head { display: flex; align-items: center; gap: 20px; }
 .app-meta { display: grid; gap: 4px; }
-.app-meta h2 { font-size: clamp(28px, 3.6vw, 34px); line-height: 1.1; }
-.app-meta .sub { color: var(--muted); }
+.app-meta h2 { font-size: clamp(22px, 2.4vw, 26px); line-height: 1.15; }
+.app-meta .sub { color: var(--muted); font-size: 15px; }
 .app-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
 /* 「获取」：淡蓝的主按钮（.cap-primary）。数据里没有下载就变灰、点不了（.is-off） */
 .app-actions .get-btn { padding: 9px 24px; }
@@ -360,6 +360,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .req { color: var(--muted); font-size: 14px; }
 @media (max-width: 600px) {
   .app-head { gap: 14px; }
+  .app-meta .sub, .more-head .sub { font-size: 14px; }
   .app-icon.big { width: 64px; height: 64px; }
   .pet-stage { --pet-h: 92px; --pet-sh: 176px; }
   .pet-stage.is-sit { --pet-h: 131px; --pet-sh: 132px; }
@@ -373,8 +374,8 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
    宽度写死成卡片宽（--card-w）：不然外面漂浮的那层会被长句子撑宽，卡片贴着它左边放，看起来偏左 ---------- */
 .more-card { width: var(--card-w); max-width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: left; max-height: calc(100vh - 190px); max-height: calc(100dvh - 190px); padding-bottom: 6px; }
 .more-head { display: grid; gap: 2px; }
-.more-head h2 { font-size: clamp(24px, 3vw, 28px); line-height: 1.15; }
-.more-head .sub { color: var(--muted); }
+.more-head h2 { font-size: clamp(22px, 2.4vw, 26px); line-height: 1.15; }   /* 和同桌卡片的标题、副标题一样大 */
+.more-head .sub { color: var(--muted); font-size: 15px; }
 .more-body {   /* 滚动区伸到卡片两边，滚动条贴着卡片边；上下两头淡出，看得出还有内容 */
   overflow-y: auto; overscroll-behavior: contain; margin: 0 -36px; padding: 6px 36px 28px;
   display: grid; gap: 24px; align-content: start;
