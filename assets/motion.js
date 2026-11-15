@@ -213,7 +213,7 @@
     if (!trailD.fromTrail) stopLinger();   // 不是从底栏回的首页，底栏照常隐去
     updateNav();
   }
-  function hashOf(name) { return name === 'home' ? location.pathname + location.search : '#' + name; }
+  function hashOf(name) { return name === 'home' ? location.pathname + location.search : '#' + name.toLowerCase(); }   // 地址栏里一律小写，如 #deskmates
   // 网址里的层名不分大小写；以前的 #deskmate 也认
   var HASH_ALIAS = { deskmate: 'DeskMates' };
   function nameFromHash() {
@@ -232,7 +232,7 @@
   function back(v) {
     if (current === 'home') return;
     var parent = levels[current].parent || 'home';
-    // 只有这条记录是网站自己从上一层推进来的，才用浏览器后退；直达链接（如 #DeskMates）进来的，后退会退出网站，所以原地换成上一层
+    // 只有这条记录是网站自己从上一层推进来的，才用浏览器后退；直达链接（如 #deskmates）进来的，后退会退出网站，所以原地换成上一层
     if (history.state && history.state.level === current && history.state.from === parent) { setLevel(parent, false, v); history.back(); }
     else { history.replaceState({ level: parent }, '', hashOf(parent)); setLevel(parent, false, v); }
   }
@@ -330,8 +330,8 @@
     if (b) applyState(previewState(b.getAttribute('data-state')));
   });
   setLevel(nameFromHash(), true);
-  // 旧链接或大小写不一样的网址（如 #deskmate）：地址栏换成现在的写法
-  if (current !== 'home' && location.hash !== '#' + current) history.replaceState(history.state, '', hashOf(current));
+  // 旧链接或大小写不一样的网址（如 #deskmate、#DeskMates）：地址栏换成现在的写法 #deskmates
+  if (current !== 'home' && location.hash !== hashOf(current)) history.replaceState(history.state, '', hashOf(current));
 
   // ---------- 点击：按下松手就是点击；只有真的滑动翻了层，才吞掉随后的那一次点击 ----------
   var suppressClick = false;
