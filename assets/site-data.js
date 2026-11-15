@@ -17,8 +17,8 @@ window.SITE = {
     {
       id: "DeskMates",
       no: "01",
-      title: "同桌",
-      sub: "你的桌面宠物",
+      title: "同桌 DeskMates",
+      sub: "住在 Mac 桌面上的宠物",
       kind: "Mac 应用",
       status: "developing",
       // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。

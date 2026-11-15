@@ -25,7 +25,7 @@
   function daysAgo(s) { return Math.round((startOfToday() - parseDate(s)) / 864e5); }
   function dayWord(n) { return n <= 0 ? '今天' : n === 1 ? '昨天' : n === 2 ? '前天' : n + ' 天前'; }
   function itemById(id) { for (var i = 0; i < site.items.length; i++) if (site.items[i].id === id) return site.items[i]; return null; }
-  function fullTitle(it) { return it.title + (it.sub ? '：' + it.sub : ''); }   // 首页以外，名字都带上那句话：「同桌：你的桌面宠物」
+  function fullTitle(it) { return it.title + (it.sub ? '：' + it.sub : ''); }   // 首页以外，名字都带上那句话：「同桌 DeskMates：住在 Mac 桌面上的宠物」
   function sortedWakes() { return (site.wakes || []).slice().sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); }); }
   function latestWakeOf(id) { var ws = sortedWakes(); for (var i = 0; i < ws.length; i++) if (ws[i].item === id) return ws[i]; return null; }
   function developing() { for (var i = 0; i < site.items.length; i++) if (site.items[i].status === 'developing') return site.items[i]; return null; }

@@ -52,7 +52,7 @@
     --bubble-home: 150px; --bubble-item: 150px; --bubble-about: 150px;
     --brand: 56px; --status: 24px; --card-w: 92vw;
     --text-bubble: 12px; --text-about: 13.5px;
-    --item-icon: 34px; --item-name: 16px; --item-meta: 11px;
+    --item-icon: 34px; --item-name: 15px; --item-meta: 11px;
     --level-pad: 64px 16px 92px; --level-pad-sym: 64px 16px;
     --lift: 110px;
     --about-r: 140px; --about-kx: 0.7; --credit-ky: 1.55;
@@ -263,7 +263,7 @@ a, button, img, svg { -webkit-user-drag: none; }
 .bubble-item { gap: 0; padding: 16px; }
 .bubble-item .app-icon, .app-icon-slot { width: var(--item-icon); height: var(--item-icon); margin-bottom: 10px; }
 .item-name { position: relative; font-size: var(--item-name); font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
-.item-sub { position: relative; margin-top: 2px; font-size: var(--text-bubble); line-height: 1.4; color: var(--muted); }
+.item-sub { position: relative; margin-top: 2px; font-size: var(--text-bubble); line-height: 1.4; color: var(--muted); word-break: keep-all; text-wrap: balance; }   /* 放不下才折，只在空格处折，两行差不多长 */
 .item-meta { position: relative; margin-top: 8px; display: flex; align-items: center; gap: 7px; font-size: var(--item-meta); line-height: 1.3; color: var(--muted); white-space: nowrap; }
 .item-meta .badge { background: none; padding: 0; font-size: inherit; gap: 4px; }   /* 状态在球里不做胶囊，只留那个点 */
 .item-meta .badge::before { width: 5px; height: 5px; }
@@ -350,7 +350,7 @@ body.about-open .trail { opacity: 0 !important; pointer-events: none !important;
 .features li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-top: 2px solid var(--line); }
 .features li:first-child { border-top: 0; padding-top: 0; }
 .features b { font-weight: 700; }
-.features span { color: var(--muted); font-size: 15px; }
+.features span { color: var(--muted); font-size: 15px; text-wrap: balance; }
 /* 详情卡里的同桌：头部和功能列表之间一行，动图按高度缩放（两种姿势同一比例尺：趴着 104px、坐着 148px），脚下一块平涂的影子。
    高度写死，图没到之前位置就留好，卡片不会跳；上边往头部收 14px，让狗头贴近「获取」 */
 .pet-stage { --pet-h: 104px; --pet-sh: 200px; position: relative; height: var(--pet-h); margin: -14px 0 -6px; display: flex; justify-content: center; }   /* flex 不是 grid：图的 height:100% 要靠容器的定高，grid 的 auto 行算不出来 */
@@ -461,7 +461,7 @@ body[data-level="home"] .trail:not(.is-lingering) { opacity: 0; pointer-events: 
 .trail-dot:hover i { border-color: var(--fg); }
 .trail-dot:focus-visible { outline: none; } .trail-dot:focus-visible i { box-shadow: 0 0 0 3px var(--soft); }
 .trail-line { flex: none; width: 20px; height: 2px; border-radius: 1px; background: var(--link-line); transform-origin: 0 50%; }
-.trail-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
+.trail-label { white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; transition: opacity 0.25s var(--ease); }
 .trail-label.is-swap { opacity: 0; }
 
 /* ---------- 预览状态按钮（网址带 ?preview 或 ?state= 才显示） ---------- */
