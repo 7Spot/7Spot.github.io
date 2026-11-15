@@ -25,7 +25,7 @@ window.SITE = {
       // os / minOS：这个包能在什么设备上用（minOS = 最低的 macOS 大版本号，更新的 macOS 都算能用）。
       // 点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用需要 macOS 26 及以上」，用户可以点「仍要下载」。
       download: {
-        url: "https://github.com/7Spot/7Spot.github.io/releases/download/v0.5.5-b44/Deskmate-0.5.5-b44.dmg",
+        url: "https://github.com/7Spot/DeskMates/releases/latest/download/DeskMates.dmg",   // 永远指向 7Spot/DeskMates 最新的正式版
         size: "约 43MB",
         req: "需要Apple Silicon, macOS 26 及以上",
         os: "mac",
