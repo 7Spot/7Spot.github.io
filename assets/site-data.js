@@ -6,7 +6,9 @@ window.SITE = {
   // 发布记录：新的放最上面。
   // 发布当天首页显示「今天醒过」，之后「昨天 / 前天 / N 天前醒过」。
   // 格式：{ date: "2026-11-01", item: "DeskMates", note: "同桌 1.0 可以下载了" }
-  wakes: [],
+  wakes: [
+    { date: "2026-11-16", item: "DeskMates", note: "同桌 DeskMates 正式版可以下载了" }
+  ],
 
   // 开发伙伴：关于页落款胶囊点一下显示的名单。同一家的放在一个列表里，组内用逗号隔开，组和组之间用 · 隔开。
   credits: ["JUN7", ["Claude Fable 5.2", "Fable 5.1", "Opus 5.5"], ["ChatGPT GPT-6 Astra", "GPT-6.1 Sol"]],
@@ -20,7 +22,7 @@ window.SITE = {
       title: "同桌 DeskMates",
       sub: "住在 Mac 桌面上的宠物",
       kind: "Mac 应用",
-      status: "developing",
+      status: "released",
       icon: "assets/img/DeskMates/icon.webp",   // 图标：小东西层的球、同桌卡片、获取弹窗里用；没有就显示爪印占位
       // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。
       // os / minOS：这个包能在什么设备上用（minOS = 最低的 macOS 大版本号，更新的 macOS 都算能用）。
