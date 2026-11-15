@@ -22,12 +22,12 @@ window.SITE = {
       kind: "Mac 应用",
       status: "developing",
       // 详情卡「获取」→ 弹窗 → 确定下载。去掉这一项，「获取」就变灰、点不了。
-      // os / chip：这个包能在什么设备上用。点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用只支持 M 芯片的 Mac」，
+      // os / chip：这个包能在什么设备上用。点「确定下载」时设备对不上，先提醒「此应用只支持 Mac」/「此应用只支持 Apple Silicon 的 Mac」，
       // 用户可以点「仍要下载」。chip: "arm" = 只支持 M 芯片。
       download: {
         url: "https://github.com/7Spot/7Spot.github.io/releases/download/v0.5.5-b44/Deskmate-0.5.5-b44.dmg",
         size: "约 43MB",
-        req: "需要 M 芯片的 Mac，macOS 12 以上",
+        req: "需要Apple Silicon, macOS 26 及以上",
         os: "mac",
         chip: "arm"
       }

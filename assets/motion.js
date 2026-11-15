@@ -941,7 +941,7 @@
   function deviceMismatch(dl) {
     if (dl.os === 'mac') {
       if (device.os !== 'mac') return '此应用只支持 Mac';
-      if (dl.chip === 'arm' && deviceChip() === 'x86') return '此应用只支持 M 芯片的 Mac';
+      if (dl.chip === 'arm' && deviceChip() === 'x86') return '此应用只支持 Apple Silicon 的 Mac';
     }
     return '';
   }
